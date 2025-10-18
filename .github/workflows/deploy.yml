@@ -32,7 +32,7 @@ jobs:
       # --- 마이그레이션: superbot DB ---
       - name: Run Prisma migrate deploy (superbot)
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL_QFLOW }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: npx prisma migrate deploy
 
       - name: Configure AWS credentials (OIDC)
