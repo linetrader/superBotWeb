@@ -1,0 +1,47 @@
+name: Migrate and Deploy to App Runner
+
+on:
+  push:
+    branches: [main] # main 브랜치 푸시 시 자동 실행
+  workflow_dispatch: # 수동 실행도 가능
+
+permissions:
+  id-token: write # OIDC 사용을 위해 필요
+  contents: read
+
+jobs:
+  migrate_and_deploy:
+    runs-on: ubuntu-latest
+    environment: superbot
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22" # Next.js 15 이상은 Node 18.18+ 필요
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      # --- 마이그레이션: superbot DB ---
+      - name: Run Prisma migrate deploy (superbot)
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL_QFLOW }}
+        run: npx prisma migrate deploy
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Trigger App Runner deployment (superbot)
+        run: |
+          aws apprunner start-deployment \
+            --service-arn "${{ secrets.APP_RUNNER_SERVICE_ARN }}"
