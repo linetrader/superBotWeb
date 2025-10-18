@@ -1,0 +1,14 @@
+import type { Prisma } from '../../prisma';
+import * as z from 'zod';
+import { BoxStrategyOrderByWithRelationInputObjectSchema as BoxStrategyOrderByWithRelationInputObjectSchema } from './objects/BoxStrategyOrderByWithRelationInput.schema';
+import { BoxStrategyWhereInputObjectSchema as BoxStrategyWhereInputObjectSchema } from './objects/BoxStrategyWhereInput.schema';
+import { BoxStrategyWhereUniqueInputObjectSchema as BoxStrategyWhereUniqueInputObjectSchema } from './objects/BoxStrategyWhereUniqueInput.schema';
+import { BoxStrategyCountAggregateInputObjectSchema as BoxStrategyCountAggregateInputObjectSchema } from './objects/BoxStrategyCountAggregateInput.schema';
+import { BoxStrategyMinAggregateInputObjectSchema as BoxStrategyMinAggregateInputObjectSchema } from './objects/BoxStrategyMinAggregateInput.schema';
+import { BoxStrategyMaxAggregateInputObjectSchema as BoxStrategyMaxAggregateInputObjectSchema } from './objects/BoxStrategyMaxAggregateInput.schema';
+import { BoxStrategyAvgAggregateInputObjectSchema as BoxStrategyAvgAggregateInputObjectSchema } from './objects/BoxStrategyAvgAggregateInput.schema';
+import { BoxStrategySumAggregateInputObjectSchema as BoxStrategySumAggregateInputObjectSchema } from './objects/BoxStrategySumAggregateInput.schema';
+
+export const BoxStrategyAggregateSchema: z.ZodType<Prisma.BoxStrategyAggregateArgs> = z.object({ orderBy: z.union([BoxStrategyOrderByWithRelationInputObjectSchema, BoxStrategyOrderByWithRelationInputObjectSchema.array()]).optional(), where: BoxStrategyWhereInputObjectSchema.optional(), cursor: BoxStrategyWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), _count: z.union([ z.literal(true), BoxStrategyCountAggregateInputObjectSchema ]).optional(), _min: BoxStrategyMinAggregateInputObjectSchema.optional(), _max: BoxStrategyMaxAggregateInputObjectSchema.optional(), _avg: BoxStrategyAvgAggregateInputObjectSchema.optional(), _sum: BoxStrategySumAggregateInputObjectSchema.optional() }).strict() as unknown as z.ZodType<Prisma.BoxStrategyAggregateArgs>;
+
+export const BoxStrategyAggregateZodSchema = z.object({ orderBy: z.union([BoxStrategyOrderByWithRelationInputObjectSchema, BoxStrategyOrderByWithRelationInputObjectSchema.array()]).optional(), where: BoxStrategyWhereInputObjectSchema.optional(), cursor: BoxStrategyWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), _count: z.union([ z.literal(true), BoxStrategyCountAggregateInputObjectSchema ]).optional(), _min: BoxStrategyMinAggregateInputObjectSchema.optional(), _max: BoxStrategyMaxAggregateInputObjectSchema.optional(), _avg: BoxStrategyAvgAggregateInputObjectSchema.optional(), _sum: BoxStrategySumAggregateInputObjectSchema.optional() }).strict();

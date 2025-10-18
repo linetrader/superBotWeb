@@ -1,0 +1,11 @@
+import * as z from 'zod';
+export const BoxStrategyUpsertResultSchema = z.object({
+  id: z.string(),
+  strategyConfigId: z.string(),
+  strategyConfig: z.unknown(),
+  lowerTh: z.number(),
+  upperTh: z.number(),
+  boxTouchPct: z.number().optional(),
+  createdAt: z.date(),
+  updatedAt: z.date()
+});

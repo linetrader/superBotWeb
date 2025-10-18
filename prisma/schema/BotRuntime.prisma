@@ -1,0 +1,27 @@
+model BotRuntime {
+  id String @id @default(cuid())
+
+  botId String
+  bot   TradingBot @relation(fields: [botId], references: [id], onDelete: Cascade)
+
+  status        BotStatus @default(STOPPED)
+  pid           Int?
+  queueJobId    String?
+  startedAt     DateTime?
+  stoppedAt     DateTime?
+  lastHeartbeat DateTime?
+
+  lastError String? @db.Text
+
+  workerTaskArn   String?    // 현재 실행중인 태스크 ARN
+  workerRevision  String?    // 컨테이너 이미지 리비전/태그
+  desiredState    BotStatus? // UI가 원하는 상태(START/STOP). 스캐너가 이 값과 enabled 동기화할 때 유용
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([botId], map: "uniq_runtime_per_bot")
+  @@index([status, updatedAt])
+  @@index([lastHeartbeat])       // 죽은 봇 정리/알림 배치 최적화
+  @@index([queueJobId])          // 조합 조회가 잦다면
+}

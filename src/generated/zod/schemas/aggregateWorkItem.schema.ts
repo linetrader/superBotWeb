@@ -1,0 +1,14 @@
+import type { Prisma } from '../../prisma';
+import * as z from 'zod';
+import { WorkItemOrderByWithRelationInputObjectSchema as WorkItemOrderByWithRelationInputObjectSchema } from './objects/WorkItemOrderByWithRelationInput.schema';
+import { WorkItemWhereInputObjectSchema as WorkItemWhereInputObjectSchema } from './objects/WorkItemWhereInput.schema';
+import { WorkItemWhereUniqueInputObjectSchema as WorkItemWhereUniqueInputObjectSchema } from './objects/WorkItemWhereUniqueInput.schema';
+import { WorkItemCountAggregateInputObjectSchema as WorkItemCountAggregateInputObjectSchema } from './objects/WorkItemCountAggregateInput.schema';
+import { WorkItemMinAggregateInputObjectSchema as WorkItemMinAggregateInputObjectSchema } from './objects/WorkItemMinAggregateInput.schema';
+import { WorkItemMaxAggregateInputObjectSchema as WorkItemMaxAggregateInputObjectSchema } from './objects/WorkItemMaxAggregateInput.schema';
+import { WorkItemAvgAggregateInputObjectSchema as WorkItemAvgAggregateInputObjectSchema } from './objects/WorkItemAvgAggregateInput.schema';
+import { WorkItemSumAggregateInputObjectSchema as WorkItemSumAggregateInputObjectSchema } from './objects/WorkItemSumAggregateInput.schema';
+
+export const WorkItemAggregateSchema: z.ZodType<Prisma.WorkItemAggregateArgs> = z.object({ orderBy: z.union([WorkItemOrderByWithRelationInputObjectSchema, WorkItemOrderByWithRelationInputObjectSchema.array()]).optional(), where: WorkItemWhereInputObjectSchema.optional(), cursor: WorkItemWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), _count: z.union([ z.literal(true), WorkItemCountAggregateInputObjectSchema ]).optional(), _min: WorkItemMinAggregateInputObjectSchema.optional(), _max: WorkItemMaxAggregateInputObjectSchema.optional(), _avg: WorkItemAvgAggregateInputObjectSchema.optional(), _sum: WorkItemSumAggregateInputObjectSchema.optional() }).strict() as unknown as z.ZodType<Prisma.WorkItemAggregateArgs>;
+
+export const WorkItemAggregateZodSchema = z.object({ orderBy: z.union([WorkItemOrderByWithRelationInputObjectSchema, WorkItemOrderByWithRelationInputObjectSchema.array()]).optional(), where: WorkItemWhereInputObjectSchema.optional(), cursor: WorkItemWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), _count: z.union([ z.literal(true), WorkItemCountAggregateInputObjectSchema ]).optional(), _min: WorkItemMinAggregateInputObjectSchema.optional(), _max: WorkItemMaxAggregateInputObjectSchema.optional(), _avg: WorkItemAvgAggregateInputObjectSchema.optional(), _sum: WorkItemSumAggregateInputObjectSchema.optional() }).strict();

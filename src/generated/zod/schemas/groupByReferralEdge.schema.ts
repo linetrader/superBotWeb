@@ -1,0 +1,15 @@
+import type { Prisma } from '../../prisma';
+import * as z from 'zod';
+import { ReferralEdgeWhereInputObjectSchema as ReferralEdgeWhereInputObjectSchema } from './objects/ReferralEdgeWhereInput.schema';
+import { ReferralEdgeOrderByWithAggregationInputObjectSchema as ReferralEdgeOrderByWithAggregationInputObjectSchema } from './objects/ReferralEdgeOrderByWithAggregationInput.schema';
+import { ReferralEdgeScalarWhereWithAggregatesInputObjectSchema as ReferralEdgeScalarWhereWithAggregatesInputObjectSchema } from './objects/ReferralEdgeScalarWhereWithAggregatesInput.schema';
+import { ReferralEdgeScalarFieldEnumSchema } from './enums/ReferralEdgeScalarFieldEnum.schema';
+import { ReferralEdgeCountAggregateInputObjectSchema as ReferralEdgeCountAggregateInputObjectSchema } from './objects/ReferralEdgeCountAggregateInput.schema';
+import { ReferralEdgeMinAggregateInputObjectSchema as ReferralEdgeMinAggregateInputObjectSchema } from './objects/ReferralEdgeMinAggregateInput.schema';
+import { ReferralEdgeMaxAggregateInputObjectSchema as ReferralEdgeMaxAggregateInputObjectSchema } from './objects/ReferralEdgeMaxAggregateInput.schema';
+import { ReferralEdgeAvgAggregateInputObjectSchema as ReferralEdgeAvgAggregateInputObjectSchema } from './objects/ReferralEdgeAvgAggregateInput.schema';
+import { ReferralEdgeSumAggregateInputObjectSchema as ReferralEdgeSumAggregateInputObjectSchema } from './objects/ReferralEdgeSumAggregateInput.schema';
+
+export const ReferralEdgeGroupBySchema: z.ZodType<Prisma.ReferralEdgeGroupByArgs> = z.object({ where: ReferralEdgeWhereInputObjectSchema.optional(), orderBy: z.union([ReferralEdgeOrderByWithAggregationInputObjectSchema, ReferralEdgeOrderByWithAggregationInputObjectSchema.array()]).optional(), having: ReferralEdgeScalarWhereWithAggregatesInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), by: z.array(ReferralEdgeScalarFieldEnumSchema), _count: z.union([ z.literal(true), ReferralEdgeCountAggregateInputObjectSchema ]).optional(), _min: ReferralEdgeMinAggregateInputObjectSchema.optional(), _max: ReferralEdgeMaxAggregateInputObjectSchema.optional(), _avg: ReferralEdgeAvgAggregateInputObjectSchema.optional(), _sum: ReferralEdgeSumAggregateInputObjectSchema.optional() }).strict() as unknown as z.ZodType<Prisma.ReferralEdgeGroupByArgs>;
+
+export const ReferralEdgeGroupByZodSchema = z.object({ where: ReferralEdgeWhereInputObjectSchema.optional(), orderBy: z.union([ReferralEdgeOrderByWithAggregationInputObjectSchema, ReferralEdgeOrderByWithAggregationInputObjectSchema.array()]).optional(), having: ReferralEdgeScalarWhereWithAggregatesInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), by: z.array(ReferralEdgeScalarFieldEnumSchema), _count: z.union([ z.literal(true), ReferralEdgeCountAggregateInputObjectSchema ]).optional(), _min: ReferralEdgeMinAggregateInputObjectSchema.optional(), _max: ReferralEdgeMaxAggregateInputObjectSchema.optional(), _avg: ReferralEdgeAvgAggregateInputObjectSchema.optional(), _sum: ReferralEdgeSumAggregateInputObjectSchema.optional() }).strict();

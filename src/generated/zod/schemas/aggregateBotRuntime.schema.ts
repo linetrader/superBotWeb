@@ -1,0 +1,14 @@
+import type { Prisma } from '../../prisma';
+import * as z from 'zod';
+import { BotRuntimeOrderByWithRelationInputObjectSchema as BotRuntimeOrderByWithRelationInputObjectSchema } from './objects/BotRuntimeOrderByWithRelationInput.schema';
+import { BotRuntimeWhereInputObjectSchema as BotRuntimeWhereInputObjectSchema } from './objects/BotRuntimeWhereInput.schema';
+import { BotRuntimeWhereUniqueInputObjectSchema as BotRuntimeWhereUniqueInputObjectSchema } from './objects/BotRuntimeWhereUniqueInput.schema';
+import { BotRuntimeCountAggregateInputObjectSchema as BotRuntimeCountAggregateInputObjectSchema } from './objects/BotRuntimeCountAggregateInput.schema';
+import { BotRuntimeMinAggregateInputObjectSchema as BotRuntimeMinAggregateInputObjectSchema } from './objects/BotRuntimeMinAggregateInput.schema';
+import { BotRuntimeMaxAggregateInputObjectSchema as BotRuntimeMaxAggregateInputObjectSchema } from './objects/BotRuntimeMaxAggregateInput.schema';
+import { BotRuntimeAvgAggregateInputObjectSchema as BotRuntimeAvgAggregateInputObjectSchema } from './objects/BotRuntimeAvgAggregateInput.schema';
+import { BotRuntimeSumAggregateInputObjectSchema as BotRuntimeSumAggregateInputObjectSchema } from './objects/BotRuntimeSumAggregateInput.schema';
+
+export const BotRuntimeAggregateSchema: z.ZodType<Prisma.BotRuntimeAggregateArgs> = z.object({ orderBy: z.union([BotRuntimeOrderByWithRelationInputObjectSchema, BotRuntimeOrderByWithRelationInputObjectSchema.array()]).optional(), where: BotRuntimeWhereInputObjectSchema.optional(), cursor: BotRuntimeWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), _count: z.union([ z.literal(true), BotRuntimeCountAggregateInputObjectSchema ]).optional(), _min: BotRuntimeMinAggregateInputObjectSchema.optional(), _max: BotRuntimeMaxAggregateInputObjectSchema.optional(), _avg: BotRuntimeAvgAggregateInputObjectSchema.optional(), _sum: BotRuntimeSumAggregateInputObjectSchema.optional() }).strict() as unknown as z.ZodType<Prisma.BotRuntimeAggregateArgs>;
+
+export const BotRuntimeAggregateZodSchema = z.object({ orderBy: z.union([BotRuntimeOrderByWithRelationInputObjectSchema, BotRuntimeOrderByWithRelationInputObjectSchema.array()]).optional(), where: BotRuntimeWhereInputObjectSchema.optional(), cursor: BotRuntimeWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), _count: z.union([ z.literal(true), BotRuntimeCountAggregateInputObjectSchema ]).optional(), _min: BotRuntimeMinAggregateInputObjectSchema.optional(), _max: BotRuntimeMaxAggregateInputObjectSchema.optional(), _avg: BotRuntimeAvgAggregateInputObjectSchema.optional(), _sum: BotRuntimeSumAggregateInputObjectSchema.optional() }).strict();

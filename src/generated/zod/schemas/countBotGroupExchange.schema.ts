@@ -1,0 +1,10 @@
+import type { Prisma } from '../../prisma';
+import * as z from 'zod';
+import { BotGroupExchangeOrderByWithRelationInputObjectSchema as BotGroupExchangeOrderByWithRelationInputObjectSchema } from './objects/BotGroupExchangeOrderByWithRelationInput.schema';
+import { BotGroupExchangeWhereInputObjectSchema as BotGroupExchangeWhereInputObjectSchema } from './objects/BotGroupExchangeWhereInput.schema';
+import { BotGroupExchangeWhereUniqueInputObjectSchema as BotGroupExchangeWhereUniqueInputObjectSchema } from './objects/BotGroupExchangeWhereUniqueInput.schema';
+import { BotGroupExchangeCountAggregateInputObjectSchema as BotGroupExchangeCountAggregateInputObjectSchema } from './objects/BotGroupExchangeCountAggregateInput.schema';
+
+export const BotGroupExchangeCountSchema: z.ZodType<Prisma.BotGroupExchangeCountArgs> = z.object({ orderBy: z.union([BotGroupExchangeOrderByWithRelationInputObjectSchema, BotGroupExchangeOrderByWithRelationInputObjectSchema.array()]).optional(), where: BotGroupExchangeWhereInputObjectSchema.optional(), cursor: BotGroupExchangeWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), select: z.union([ z.literal(true), BotGroupExchangeCountAggregateInputObjectSchema ]).optional() }).strict() as unknown as z.ZodType<Prisma.BotGroupExchangeCountArgs>;
+
+export const BotGroupExchangeCountZodSchema = z.object({ orderBy: z.union([BotGroupExchangeOrderByWithRelationInputObjectSchema, BotGroupExchangeOrderByWithRelationInputObjectSchema.array()]).optional(), where: BotGroupExchangeWhereInputObjectSchema.optional(), cursor: BotGroupExchangeWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), select: z.union([ z.literal(true), BotGroupExchangeCountAggregateInputObjectSchema ]).optional() }).strict();

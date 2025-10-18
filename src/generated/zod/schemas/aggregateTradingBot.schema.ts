@@ -1,0 +1,12 @@
+import type { Prisma } from '../../prisma';
+import * as z from 'zod';
+import { TradingBotOrderByWithRelationInputObjectSchema as TradingBotOrderByWithRelationInputObjectSchema } from './objects/TradingBotOrderByWithRelationInput.schema';
+import { TradingBotWhereInputObjectSchema as TradingBotWhereInputObjectSchema } from './objects/TradingBotWhereInput.schema';
+import { TradingBotWhereUniqueInputObjectSchema as TradingBotWhereUniqueInputObjectSchema } from './objects/TradingBotWhereUniqueInput.schema';
+import { TradingBotCountAggregateInputObjectSchema as TradingBotCountAggregateInputObjectSchema } from './objects/TradingBotCountAggregateInput.schema';
+import { TradingBotMinAggregateInputObjectSchema as TradingBotMinAggregateInputObjectSchema } from './objects/TradingBotMinAggregateInput.schema';
+import { TradingBotMaxAggregateInputObjectSchema as TradingBotMaxAggregateInputObjectSchema } from './objects/TradingBotMaxAggregateInput.schema';
+
+export const TradingBotAggregateSchema: z.ZodType<Prisma.TradingBotAggregateArgs> = z.object({ orderBy: z.union([TradingBotOrderByWithRelationInputObjectSchema, TradingBotOrderByWithRelationInputObjectSchema.array()]).optional(), where: TradingBotWhereInputObjectSchema.optional(), cursor: TradingBotWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), _count: z.union([ z.literal(true), TradingBotCountAggregateInputObjectSchema ]).optional(), _min: TradingBotMinAggregateInputObjectSchema.optional(), _max: TradingBotMaxAggregateInputObjectSchema.optional() }).strict() as unknown as z.ZodType<Prisma.TradingBotAggregateArgs>;
+
+export const TradingBotAggregateZodSchema = z.object({ orderBy: z.union([TradingBotOrderByWithRelationInputObjectSchema, TradingBotOrderByWithRelationInputObjectSchema.array()]).optional(), where: TradingBotWhereInputObjectSchema.optional(), cursor: TradingBotWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), _count: z.union([ z.literal(true), TradingBotCountAggregateInputObjectSchema ]).optional(), _min: TradingBotMinAggregateInputObjectSchema.optional(), _max: TradingBotMaxAggregateInputObjectSchema.optional() }).strict();

@@ -1,0 +1,14 @@
+import type { Prisma } from '../../prisma';
+import * as z from 'zod';
+import { UserInfoOrderByWithRelationInputObjectSchema as UserInfoOrderByWithRelationInputObjectSchema } from './objects/UserInfoOrderByWithRelationInput.schema';
+import { UserInfoWhereInputObjectSchema as UserInfoWhereInputObjectSchema } from './objects/UserInfoWhereInput.schema';
+import { UserInfoWhereUniqueInputObjectSchema as UserInfoWhereUniqueInputObjectSchema } from './objects/UserInfoWhereUniqueInput.schema';
+import { UserInfoCountAggregateInputObjectSchema as UserInfoCountAggregateInputObjectSchema } from './objects/UserInfoCountAggregateInput.schema';
+import { UserInfoMinAggregateInputObjectSchema as UserInfoMinAggregateInputObjectSchema } from './objects/UserInfoMinAggregateInput.schema';
+import { UserInfoMaxAggregateInputObjectSchema as UserInfoMaxAggregateInputObjectSchema } from './objects/UserInfoMaxAggregateInput.schema';
+import { UserInfoAvgAggregateInputObjectSchema as UserInfoAvgAggregateInputObjectSchema } from './objects/UserInfoAvgAggregateInput.schema';
+import { UserInfoSumAggregateInputObjectSchema as UserInfoSumAggregateInputObjectSchema } from './objects/UserInfoSumAggregateInput.schema';
+
+export const UserInfoAggregateSchema: z.ZodType<Prisma.UserInfoAggregateArgs> = z.object({ orderBy: z.union([UserInfoOrderByWithRelationInputObjectSchema, UserInfoOrderByWithRelationInputObjectSchema.array()]).optional(), where: UserInfoWhereInputObjectSchema.optional(), cursor: UserInfoWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), _count: z.union([ z.literal(true), UserInfoCountAggregateInputObjectSchema ]).optional(), _min: UserInfoMinAggregateInputObjectSchema.optional(), _max: UserInfoMaxAggregateInputObjectSchema.optional(), _avg: UserInfoAvgAggregateInputObjectSchema.optional(), _sum: UserInfoSumAggregateInputObjectSchema.optional() }).strict() as unknown as z.ZodType<Prisma.UserInfoAggregateArgs>;
+
+export const UserInfoAggregateZodSchema = z.object({ orderBy: z.union([UserInfoOrderByWithRelationInputObjectSchema, UserInfoOrderByWithRelationInputObjectSchema.array()]).optional(), where: UserInfoWhereInputObjectSchema.optional(), cursor: UserInfoWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), _count: z.union([ z.literal(true), UserInfoCountAggregateInputObjectSchema ]).optional(), _min: UserInfoMinAggregateInputObjectSchema.optional(), _max: UserInfoMaxAggregateInputObjectSchema.optional(), _avg: UserInfoAvgAggregateInputObjectSchema.optional(), _sum: UserInfoSumAggregateInputObjectSchema.optional() }).strict();

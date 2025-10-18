@@ -1,0 +1,15 @@
+import type { Prisma } from '../../prisma';
+import * as z from 'zod';
+import { UserWalletWhereInputObjectSchema as UserWalletWhereInputObjectSchema } from './objects/UserWalletWhereInput.schema';
+import { UserWalletOrderByWithAggregationInputObjectSchema as UserWalletOrderByWithAggregationInputObjectSchema } from './objects/UserWalletOrderByWithAggregationInput.schema';
+import { UserWalletScalarWhereWithAggregatesInputObjectSchema as UserWalletScalarWhereWithAggregatesInputObjectSchema } from './objects/UserWalletScalarWhereWithAggregatesInput.schema';
+import { UserWalletScalarFieldEnumSchema } from './enums/UserWalletScalarFieldEnum.schema';
+import { UserWalletCountAggregateInputObjectSchema as UserWalletCountAggregateInputObjectSchema } from './objects/UserWalletCountAggregateInput.schema';
+import { UserWalletMinAggregateInputObjectSchema as UserWalletMinAggregateInputObjectSchema } from './objects/UserWalletMinAggregateInput.schema';
+import { UserWalletMaxAggregateInputObjectSchema as UserWalletMaxAggregateInputObjectSchema } from './objects/UserWalletMaxAggregateInput.schema';
+import { UserWalletAvgAggregateInputObjectSchema as UserWalletAvgAggregateInputObjectSchema } from './objects/UserWalletAvgAggregateInput.schema';
+import { UserWalletSumAggregateInputObjectSchema as UserWalletSumAggregateInputObjectSchema } from './objects/UserWalletSumAggregateInput.schema';
+
+export const UserWalletGroupBySchema: z.ZodType<Prisma.UserWalletGroupByArgs> = z.object({ where: UserWalletWhereInputObjectSchema.optional(), orderBy: z.union([UserWalletOrderByWithAggregationInputObjectSchema, UserWalletOrderByWithAggregationInputObjectSchema.array()]).optional(), having: UserWalletScalarWhereWithAggregatesInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), by: z.array(UserWalletScalarFieldEnumSchema), _count: z.union([ z.literal(true), UserWalletCountAggregateInputObjectSchema ]).optional(), _min: UserWalletMinAggregateInputObjectSchema.optional(), _max: UserWalletMaxAggregateInputObjectSchema.optional(), _avg: UserWalletAvgAggregateInputObjectSchema.optional(), _sum: UserWalletSumAggregateInputObjectSchema.optional() }).strict() as unknown as z.ZodType<Prisma.UserWalletGroupByArgs>;
+
+export const UserWalletGroupByZodSchema = z.object({ where: UserWalletWhereInputObjectSchema.optional(), orderBy: z.union([UserWalletOrderByWithAggregationInputObjectSchema, UserWalletOrderByWithAggregationInputObjectSchema.array()]).optional(), having: UserWalletScalarWhereWithAggregatesInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), by: z.array(UserWalletScalarFieldEnumSchema), _count: z.union([ z.literal(true), UserWalletCountAggregateInputObjectSchema ]).optional(), _min: UserWalletMinAggregateInputObjectSchema.optional(), _max: UserWalletMaxAggregateInputObjectSchema.optional(), _avg: UserWalletAvgAggregateInputObjectSchema.optional(), _sum: UserWalletSumAggregateInputObjectSchema.optional() }).strict();

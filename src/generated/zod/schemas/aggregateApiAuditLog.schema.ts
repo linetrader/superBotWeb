@@ -1,0 +1,14 @@
+import type { Prisma } from '../../prisma';
+import * as z from 'zod';
+import { ApiAuditLogOrderByWithRelationInputObjectSchema as ApiAuditLogOrderByWithRelationInputObjectSchema } from './objects/ApiAuditLogOrderByWithRelationInput.schema';
+import { ApiAuditLogWhereInputObjectSchema as ApiAuditLogWhereInputObjectSchema } from './objects/ApiAuditLogWhereInput.schema';
+import { ApiAuditLogWhereUniqueInputObjectSchema as ApiAuditLogWhereUniqueInputObjectSchema } from './objects/ApiAuditLogWhereUniqueInput.schema';
+import { ApiAuditLogCountAggregateInputObjectSchema as ApiAuditLogCountAggregateInputObjectSchema } from './objects/ApiAuditLogCountAggregateInput.schema';
+import { ApiAuditLogMinAggregateInputObjectSchema as ApiAuditLogMinAggregateInputObjectSchema } from './objects/ApiAuditLogMinAggregateInput.schema';
+import { ApiAuditLogMaxAggregateInputObjectSchema as ApiAuditLogMaxAggregateInputObjectSchema } from './objects/ApiAuditLogMaxAggregateInput.schema';
+import { ApiAuditLogAvgAggregateInputObjectSchema as ApiAuditLogAvgAggregateInputObjectSchema } from './objects/ApiAuditLogAvgAggregateInput.schema';
+import { ApiAuditLogSumAggregateInputObjectSchema as ApiAuditLogSumAggregateInputObjectSchema } from './objects/ApiAuditLogSumAggregateInput.schema';
+
+export const ApiAuditLogAggregateSchema: z.ZodType<Prisma.ApiAuditLogAggregateArgs> = z.object({ orderBy: z.union([ApiAuditLogOrderByWithRelationInputObjectSchema, ApiAuditLogOrderByWithRelationInputObjectSchema.array()]).optional(), where: ApiAuditLogWhereInputObjectSchema.optional(), cursor: ApiAuditLogWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), _count: z.union([ z.literal(true), ApiAuditLogCountAggregateInputObjectSchema ]).optional(), _min: ApiAuditLogMinAggregateInputObjectSchema.optional(), _max: ApiAuditLogMaxAggregateInputObjectSchema.optional(), _avg: ApiAuditLogAvgAggregateInputObjectSchema.optional(), _sum: ApiAuditLogSumAggregateInputObjectSchema.optional() }).strict() as unknown as z.ZodType<Prisma.ApiAuditLogAggregateArgs>;
+
+export const ApiAuditLogAggregateZodSchema = z.object({ orderBy: z.union([ApiAuditLogOrderByWithRelationInputObjectSchema, ApiAuditLogOrderByWithRelationInputObjectSchema.array()]).optional(), where: ApiAuditLogWhereInputObjectSchema.optional(), cursor: ApiAuditLogWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), _count: z.union([ z.literal(true), ApiAuditLogCountAggregateInputObjectSchema ]).optional(), _min: ApiAuditLogMinAggregateInputObjectSchema.optional(), _max: ApiAuditLogMaxAggregateInputObjectSchema.optional(), _avg: ApiAuditLogAvgAggregateInputObjectSchema.optional(), _sum: ApiAuditLogSumAggregateInputObjectSchema.optional() }).strict();
