@@ -1,3 +1,6 @@
-export default function Home() {
-  return <h1>슈퍼봇에 오신걸 환영합니다.</h1>;
+// src/app/(site)/(home)/page.tsx
+import HomePage from "./view/HomePage";
+
+export default function Page() {
+  return <HomePage />;
 }

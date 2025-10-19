@@ -1,4 +1,4 @@
-// src/lib/fetcher.ts
+// src/app/(site)/bot-config/lib/fetcher.ts
 
 export async function postJson<TReq extends object, TRes>(
   url: string,

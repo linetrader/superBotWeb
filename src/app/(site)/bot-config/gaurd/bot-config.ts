@@ -45,6 +45,23 @@ export function isStrategyConfigMeta(a: unknown): a is StrategyConfigMeta {
   return typeof o?.id === "string" && typeof o?.name === "string";
 }
 
+/* ------------------------ BotStatus 가드 (loose) ------------------------ */
+/**
+ * 백엔드(DB) 상태는 아래 5가지를 포함할 수 있습니다.
+ * STOPPED | STARTING | RUNNING | STOPPING | ERROR
+ * + 방어적으로 UNKNOWN 도 수용
+ */
+export function isBotStatusLoose(v: unknown): v is BotStatus {
+  return (
+    v === "RUNNING" ||
+    v === "STOPPED" ||
+    v === "STARTING" ||
+    v === "STOPPING" ||
+    v === "ERROR" ||
+    v === "UNKNOWN"
+  );
+}
+
 /* ------------------------ 입력 검증(행/그룹) ------------------------ */
 export function validateExchangeItemInput(i: ExchangeItemInput): boolean {
   if (typeof i.exchangeMarketId !== "string" || i.exchangeMarketId.length === 0)
@@ -211,16 +228,15 @@ export function validatePayloadDetailed(
 }
 
 /* ------------------------ 봇 리스트 가드/도우미 ------------------------ */
+/** 런타임에서 들어온 임의 객체가 BotRow 형태인지 검사 */
 export function isBotRow(a: unknown): a is BotRow {
   const o = a as Record<string, unknown>;
   const mode = o?.mode;
   const status = o?.status;
+
   const modeOk = mode === "SINGLE" || mode === "MULTI";
   const statusOk =
-    typeof status === "undefined" ||
-    status === "RUNNING" ||
-    status === "STOPPED" ||
-    status === "UNKNOWN";
+    typeof status === "undefined" || isBotStatusLoose(status as unknown);
 
   return (
     typeof o?.id === "string" &&
@@ -231,16 +247,54 @@ export function isBotRow(a: unknown): a is BotRow {
   );
 }
 
+/**
+ * 백엔드가 다양한 상태(STARTING/STOPPING/ERROR)를 반환해도
+ * 그대로 보존. 없거나 알 수 없으면 enabled 플래그로 보수적 추론.
+ */
 export function coerceStatus(row: BotRow): BotStatus {
-  if (
-    row.status === "RUNNING" ||
-    row.status === "STOPPED" ||
-    row.status === "UNKNOWN"
-  ) {
+  if (isBotStatusLoose(row.status)) {
     return row.status;
   }
   if (typeof row.enabled === "boolean") {
     return row.enabled ? "RUNNING" : "STOPPED";
   }
   return "UNKNOWN";
+}
+
+/* ------------------------ 정규화 유틸 ------------------------ */
+/** unknown → BotRow | null */
+export function normalizeBotRow(u: unknown): BotRow | null {
+  if (!isBotRow(u)) return null;
+  const r = u as BotRow;
+  return { ...r, status: coerceStatus(r) };
+}
+
+/** ApiResponse<T[]> | T[] 형태 모두 처리 */
+export function parseBotsResponse(raw: unknown): BotRow[] {
+  if (
+    typeof (raw as { ok?: unknown })?.ok === "boolean" &&
+    (raw as { ok: boolean }).ok === true &&
+    Array.isArray((raw as { data?: unknown }).data)
+  ) {
+    const arr = (raw as { data: unknown[] }).data
+      .map(normalizeBotRow)
+      .filter(Boolean) as BotRow[];
+    return arr;
+  }
+  if (Array.isArray(raw)) {
+    return (raw as unknown[]).map(normalizeBotRow).filter(Boolean) as BotRow[];
+  }
+  return [];
+}
+
+/** ApiResponse<T> | T 형태 모두 처리 (단건) */
+export function parseSingleBotResponse(raw: unknown): BotRow | null {
+  if (
+    typeof (raw as { ok?: unknown })?.ok === "boolean" &&
+    (raw as { ok: boolean }).ok === true &&
+    (raw as { data?: unknown }).data
+  ) {
+    return normalizeBotRow((raw as { data: unknown }).data);
+  }
+  return normalizeBotRow(raw);
 }

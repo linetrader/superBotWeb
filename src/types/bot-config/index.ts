@@ -154,7 +154,13 @@ export type UseBotConfigFormReturn = {
 /* =========================
    봇 리스트/상태 타입 추가
    ========================= */
-export type BotStatus = "RUNNING" | "STOPPED" | "UNKNOWN";
+export type BotStatus =
+  | "RUNNING"
+  | "STOPPED"
+  | "STARTING"
+  | "STOPPING"
+  | "ERROR"
+  | "UNKNOWN";
 
 export type BotRow = {
   id: string;
@@ -163,6 +169,17 @@ export type BotRow = {
   symbol: string;
   enabled?: boolean;
   status?: BotStatus;
+
+  /** 단건 GET 응답에서만 오는 DB 원본 상태 (옵셔널) */
+  statusRaw?:
+    | "STOPPED"
+    | "STARTING"
+    | "RUNNING"
+    | "STOPPING"
+    | "ERROR"
+    | "UNKNOWN";
+  /** 런타임 상태 최근 갱신 시각 (ISO8601) */
+  statusUpdatedAt?: string;
 };
 
 // src/types/bots.ts

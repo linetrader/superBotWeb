@@ -3,7 +3,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getJson, postJson } from "../lib/fetcher";
-import { BotRow, StrategyConfigMeta } from "@/types/bot-config";
+import { BotRow, StrategyConfigMeta, ApiResponse } from "@/types/bot-config";
 import {
   coerceStatus,
   isBotRow,
@@ -177,6 +177,25 @@ export function useBots(args?: UseBotsArgs) {
     [botsEndpoint]
   );
 
+  // ★ 단건 조회: /api/bot-config/bots/[id]
+  const getBotById = useCallback(
+    async (id: string): Promise<BotRow | null> => {
+      try {
+        const res = await getJson<ApiResponse<BotRow>>(
+          `${botsEndpoint}/${encodeURIComponent(id)}`
+        );
+        if ((res as { ok: boolean }).ok && (res as { data?: unknown }).data) {
+          const data = (res as { data: unknown }).data as BotRow;
+          return data;
+        }
+        return null;
+      } catch {
+        return null;
+      }
+    },
+    [botsEndpoint]
+  );
+
   const hasBots = useMemo(() => bots.length > 0, [bots]);
 
   return {
@@ -205,5 +224,8 @@ export function useBots(args?: UseBotsArgs) {
     setSelectedBotId,
     deletingId,
     deleteBot,
+
+    // ★ 단건 조회
+    getBotById,
   };
 }

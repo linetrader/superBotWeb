@@ -11,12 +11,16 @@ import {
   BotMode,
   GroupKey,
   MarketKind,
+  BotStatus,
+  BotRow,
 } from "@/types/bot-config";
+import BotList from "@/app/(site)/shared/view/BotList";
+import { useBotStatusWatcher } from "@/app/(site)/shared/hooks/useBotStatusWatcher";
 
 export default function BotConfigForm() {
   const { toast } = useToast();
 
-  // 폼 상태 훅
+  // 폼 훅
   const form = useBotConfigForm({});
 
   // 봇/메타 훅
@@ -37,12 +41,27 @@ export default function BotConfigForm() {
     startBot,
     stopBot,
 
-    // 선택/삭제 관련
     selectedBotId,
     setSelectedBotId,
     deleteBot,
     deletingId,
+
+    getBotById, // ★ 단건 조회
   } = useBots();
+
+  // 시작/정지 후 상태 전환까지 대기(단건 조회 우선)
+  const watcher = useBotStatusWatcher({
+    startBot,
+    stopBot,
+    loadBots,
+    getBotsSnapshot: () => bots,
+    getBotById, // ★ 중요
+  });
+
+  const selectedBot: BotRow | undefined = bots.find(
+    (b) => b.id === (selectedBotId ?? "")
+  );
+  const selectedStatus: BotStatus | undefined = selectedBot?.status;
 
   async function onSubmit() {
     const v = form.validate();
@@ -50,7 +69,6 @@ export default function BotConfigForm() {
       toast({ title: "유효성 오류", description: v.message, variant: "error" });
       return;
     }
-
     const payload = form.composePayload();
     form.setSubmit({ submitting: true });
     try {
@@ -65,10 +83,13 @@ export default function BotConfigForm() {
       } else {
         toast({
           title: "저장 실패",
-          description: `${res.error}${typeof res.code === "string" ? ` (${res.code})` : ""}`,
+          description: `${res.error}${typeof (res as { code?: unknown }).code === "string" ? ` (${(res as { code?: string }).code})` : ""}`,
           variant: "error",
         });
-        form.setSubmit({ submitting: false, error: res.error });
+        form.setSubmit({
+          submitting: false,
+          error: (res as { error?: string }).error ?? "error",
+        });
       }
     } catch {
       toast({
@@ -80,8 +101,7 @@ export default function BotConfigForm() {
     }
   }
 
-  // 선택된 봇 삭제
-  const onDeleteSelected = async () => {
+  const onDeleteSelected = async (): Promise<void> => {
     if (!selectedBotId) return;
     const ok = window.confirm(
       "선택한 봇을 삭제할까요? 이 동작은 되돌릴 수 없습니다."
@@ -170,7 +190,6 @@ export default function BotConfigForm() {
               onChange={form.setModeSingle}
             />
             <div role="tabpanel" className="tab-content p-4">
-              {/* SINGLE 전용 */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="form-control">
                   <label className="label">
@@ -219,9 +238,8 @@ export default function BotConfigForm() {
               onChange={form.setModeMulti}
             />
             <div role="tabpanel" className="tab-content p-4">
-              {/* MULTI 전용: A/B 그룹 */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Group A */}
+                {/* 그룹 A */}
                 <div className="card bg-base-200">
                   <div className="card-body">
                     <h3 className="card-title">그룹 A</h3>
@@ -231,7 +249,6 @@ export default function BotConfigForm() {
                     >
                       거래소 추가
                     </button>
-
                     <div className="mt-3 space-y-3">
                       {form.groupA.exchanges.map((row, idx) => {
                         const selectedExName =
@@ -349,7 +366,7 @@ export default function BotConfigForm() {
                   </div>
                 </div>
 
-                {/* Group B */}
+                {/* 그룹 B */}
                 <div className="card bg-base-200">
                   <div className="card-body">
                     <h3 className="card-title">그룹 B</h3>
@@ -359,7 +376,6 @@ export default function BotConfigForm() {
                     >
                       거래소 추가
                     </button>
-
                     <div className="mt-3 space-y-3">
                       {form.groupB.exchanges.map((row, idx) => {
                         const selectedExName =
@@ -495,137 +511,71 @@ export default function BotConfigForm() {
         </div>
       </div>
 
-      {/* 봇 리스트 */}
-      <div className="card bg-base-100 shadow mt-8">
-        <div className="card-body">
-          <div className="flex items-center justify-between">
-            <h3 className="card-title">봇 리스트</h3>
-            <div className="flex items-center gap-2">
-              <button
-                className="btn btn-sm"
-                onClick={loadBots}
-                disabled={loadingBots}
-              >
-                {loadingBots ? "새로고침..." : "새로고침"}
-              </button>
-              <button
-                className="btn btn-sm btn-error"
-                onClick={onDeleteSelected}
-                disabled={
-                  loadingBots || !selectedBotId || deletingId === selectedBotId
-                }
-              >
-                {deletingId === selectedBotId ? "삭제중..." : "선택 삭제"}
-              </button>
-            </div>
-          </div>
-
-          {botsError ? (
-            <div className="alert alert-error mt-3">{botsError}</div>
-          ) : null}
-
-          {!loadingBots && !hasBots ? (
-            <div className="text-sm opacity-70">등록된 봇이 없습니다.</div>
-          ) : null}
-
-          <div className="overflow-x-auto mt-2">
-            <table className="table table-zebra">
-              <thead>
-                <tr>
-                  <th></th>
-                  <th>이름</th>
-                  <th>모드</th>
-                  <th>심볼</th>
-                  <th>상태</th>
-                  <th className="text-right">액션</th>
-                </tr>
-              </thead>
-              <tbody>
-                {bots.map((b) => {
-                  const badgeClass =
-                    b.status === "RUNNING"
-                      ? "badge-success"
-                      : b.status === "STOPPED"
-                        ? "badge-ghost"
-                        : "badge-warning";
-                  const rowDeleting = deletingId === b.id;
-                  return (
-                    <tr key={b.id} className="hover">
-                      <td>
-                        <input
-                          type="radio"
-                          name="selected-bot"
-                          className="radio"
-                          checked={selectedBotId === b.id}
-                          onChange={() => setSelectedBotId(b.id)}
-                        />
-                      </td>
-                      <td>{b.name}</td>
-                      <td>{b.mode}</td>
-                      <td>{b.symbol}</td>
-                      <td>
-                        <span className={`badge ${badgeClass}`}>
-                          {b.status}
-                        </span>
-                      </td>
-                      <td>
-                        <div className="flex gap-2 justify-end">
-                          <button
-                            className="btn btn-xs btn-primary"
-                            onClick={() => void startBot(b.id)}
-                            disabled={b.status === "RUNNING" || rowDeleting}
-                          >
-                            시작
-                          </button>
-                          <button
-                            className="btn btn-xs btn-warning"
-                            onClick={() => void stopBot(b.id)}
-                            disabled={b.status === "STOPPED" || rowDeleting}
-                          >
-                            종료
-                          </button>
-                          <button
-                            className="btn btn-xs btn-error"
-                            onClick={async () => {
-                              const ok = window.confirm("이 봇을 삭제할까요?");
-                              if (!ok) return;
-                              const res = await deleteBot(b.id);
-                              if (res.ok) {
-                                if (selectedBotId === b.id)
-                                  setSelectedBotId(null);
-                                await loadBots();
-                              } else {
-                                toast({
-                                  title: "삭제 실패",
-                                  description:
-                                    res.error ?? "삭제 중 오류가 발생했습니다.",
-                                  variant: "error",
-                                });
-                              }
-                            }}
-                            disabled={rowDeleting}
-                          >
-                            {rowDeleting ? "삭제중..." : "삭제"}
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-                {loadingBots ? (
-                  <tr>
-                    <td colSpan={6}>
-                      <div className="flex justify-center p-3">
-                        <span className="loading loading-spinner loading-sm" />
-                      </div>
-                    </td>
-                  </tr>
-                ) : null}
-              </tbody>
-            </table>
-          </div>
-        </div>
+      {/* 봇 리스트: 단건 상태 기반 활성화 */}
+      <div className="mt-8">
+        <BotList
+          title="봇 리스트"
+          bots={bots}
+          loading={loadingBots}
+          error={botsError}
+          selectedBotId={selectedBotId ?? null}
+          deletingId={deletingId}
+          selectedStatus={selectedStatus}
+          pendingId={watcher.pendingId}
+          pendingAction={watcher.pendingAction}
+          onStartSelected={async () => {
+            if (!selectedBot) return;
+            const r = await watcher.startAndWait(selectedBot.id);
+            if (!r.ok) {
+              toast({
+                title: "시작 실패",
+                description: r.reason,
+                variant: "error",
+              });
+            }
+          }}
+          onStopSelected={async () => {
+            if (!selectedBot) return;
+            const r = await watcher.stopAndWait(selectedBot.id);
+            if (!r.ok) {
+              toast({
+                title: "정지 실패",
+                description: r.reason,
+                variant: "error",
+              });
+            }
+          }}
+          onStartBot={async (id: string) => {
+            const r = await watcher.startAndWait(id);
+            if (!r.ok) {
+              toast({
+                title: "시작 실패",
+                description: r.reason,
+                variant: "error",
+              });
+            }
+          }}
+          onStopBot={async (id: string) => {
+            const r = await watcher.stopAndWait(id);
+            if (!r.ok) {
+              toast({
+                title: "정지 실패",
+                description: r.reason,
+                variant: "error",
+              });
+            }
+          }}
+          onSelect={(id: string | null) => setSelectedBotId(id)}
+          onReload={async () => {
+            await loadBots();
+          }}
+          onDeleteSelected={onDeleteSelected}
+        />
       </div>
+
+      {!loadingBots && !hasBots ? (
+        <div className="text-sm opacity-70 mt-2">등록된 봇이 없습니다.</div>
+      ) : null}
     </div>
   );
 }
