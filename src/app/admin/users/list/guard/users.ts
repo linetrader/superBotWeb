@@ -1,6 +1,3 @@
-// 런타임 검증 및 가드 (Zod)
-// 폴더명은 요구사항에 맞춰 "gaurd"
-
 import { z } from "zod";
 import type {
   DetailApiResponse,
@@ -11,18 +8,23 @@ import type {
   UserRow,
 } from "../types";
 
+// 목록 행 스키마 (nullable 허용)
 export const UserRowSchema = z.object({
   id: z.string().min(1),
-  username: z.string().min(1),
-  email: z.string().min(1),
-  name: z.string().min(1),
+  username: z.string().nullable(),
+  email: z.string().nullable(),
+  name: z.string().nullable(),
   countryCode: z.string().length(2).nullable(),
-  createdAt: z.string().datetime(),
+  createdAt: z.string().min(1), // ISO 문자열(서버에서 toISOString)
 });
 
+// 목록 API 응답 (페이지네이션 메타 포함)
 export const ListApiOkSchema = z.object({
   ok: z.literal(true),
   data: z.array(UserRowSchema),
+  page: z.number().int().min(1),
+  pageSize: z.number().int().min(1),
+  total: z.number().int().min(0),
 });
 
 export const ListApiErrSchema = z.object({
@@ -35,15 +37,16 @@ export const ListApiResponseSchema = z.union([
   ListApiErrSchema,
 ]);
 
+// 상세 스키마 (referralCode nullable, level >= 1)
 export const UserInfoDetailSchema = z.object({
   id: z.string().min(1),
   userId: z.string().min(1),
-  referralCode: z.string().min(1),
-  level: z.number().int().nonnegative(),
+  referralCode: z.string().nullable(),
+  level: z.number().int().min(1),
   googleOtpEnabled: z.boolean(),
   googleOtpSecret: z.string().nullable(),
-  createdAt: z.string().datetime(),
-  updatedAt: z.string().datetime(),
+  createdAt: z.string().min(1),
+  updatedAt: z.string().min(1),
 });
 
 export const DetailApiOkSchema = z.object({

@@ -1,3 +1,4 @@
+// src/app/admin/users/list/hooks/useUsersList.ts
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -7,7 +8,7 @@ import {
   parseListResponse,
   parseUpdateLevelResponse,
   toUpdateLevelPayload,
-} from "../gaurd/users";
+} from "../guard/users";
 import { useToast } from "@/components/ui";
 
 export function useUsersList(): UseUsersListReturn {
@@ -26,6 +27,11 @@ export function useUsersList(): UseUsersListReturn {
   const [editLevel, setEditLevelState] = useState<number | null>(null);
   const [savingLevel, setSavingLevel] = useState<boolean>(false);
 
+  // pagination
+  const [page, setPage] = useState<number>(1);
+  const [pageSize] = useState<number>(20);
+  const [total, setTotal] = useState<number>(0);
+
   const setEditLevel = useCallback((n: number) => {
     setEditLevelState(n);
   }, []);
@@ -34,8 +40,14 @@ export function useUsersList(): UseUsersListReturn {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/admin/users/list", { cache: "no-store" });
-      const json = await res.json();
+      const sp = new URLSearchParams();
+      sp.set("page", String(page));
+      sp.set("pageSize", String(pageSize));
+
+      const res = await fetch(`/api/admin/users/list?${sp.toString()}`, {
+        cache: "no-store",
+      });
+      const json = (await res.json()) as unknown;
       const parsed = parseListResponse(json);
       if (!parsed.ok) {
         setError(parsed.error);
@@ -46,6 +58,7 @@ export function useUsersList(): UseUsersListReturn {
         });
       } else {
         setUsers(parsed.data);
+        setTotal(parsed.total);
       }
     } catch {
       setError("NETWORK_ERROR");
@@ -57,7 +70,7 @@ export function useUsersList(): UseUsersListReturn {
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, [toast, page, pageSize]);
 
   const fetchDetail = useCallback(
     async (userId: string) => {
@@ -65,7 +78,7 @@ export function useUsersList(): UseUsersListReturn {
       try {
         const url = `/api/admin/users/list?id=${encodeURIComponent(userId)}`;
         const res = await fetch(url, { cache: "no-store" });
-        const json = await res.json();
+        const json = (await res.json()) as unknown;
         const parsed = parseDetailResponse(json);
         if (!parsed.ok) {
           toast({
@@ -107,16 +120,18 @@ export function useUsersList(): UseUsersListReturn {
   }, []);
 
   const refresh = useCallback(() => {
-    fetchList();
+    void fetchList();
   }, [fetchList]);
 
+  // 초기 및 페이지 변경 시 목록 로드
   useEffect(() => {
-    fetchList();
+    void fetchList();
   }, [fetchList]);
 
+  // 상세 패널 열리면 해당 사용자 상세 로드
   useEffect(() => {
     if (detailOpen && detailUserId) {
-      fetchDetail(detailUserId);
+      void fetchDetail(detailUserId);
     }
   }, [detailOpen, detailUserId, fetchDetail]);
 
@@ -137,7 +152,7 @@ export function useUsersList(): UseUsersListReturn {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      const json = await res.json();
+      const json = (await res.json()) as unknown;
       const parsed = parseUpdateLevelResponse(json);
       if (!parsed.ok) {
         toast({
@@ -179,6 +194,11 @@ export function useUsersList(): UseUsersListReturn {
       setEditLevel,
       savingLevel,
       saveLevel,
+
+      page,
+      pageSize,
+      total,
+      setPage,
     }),
     [
       loading,
@@ -194,6 +214,10 @@ export function useUsersList(): UseUsersListReturn {
       setEditLevel,
       savingLevel,
       saveLevel,
+      page,
+      pageSize,
+      total,
+      setPage,
     ]
   );
 

@@ -1,7 +1,5 @@
+// src/app/admin/users/list/view/ListView.tsx
 "use client";
-
-// 렌더링 전용(연산 로직 없음). daisyUI만 사용.
-// JSX.Element, React.ReactNode 타입 명시하지 않음.
 
 import type { UseUsersListReturn, UserRow, UserInfoDetail } from "../types";
 

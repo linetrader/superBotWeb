@@ -1,4 +1,3 @@
-// src/app/admin/bots/list/gaurd/bots.ts
 import { z } from "zod";
 import type {
   BotRow,
@@ -20,7 +19,7 @@ export const RuntimeStatusSchema = z.union([
 export const BotRowSchema = z.object({
   id: z.string().min(1),
   userId: z.string().min(1),
-  username: z.string().min(1), // ← 추가
+  username: z.string().min(1),
   name: z.string().min(1),
   mode: z.union([z.literal("SINGLE"), z.literal("MULTI")]),
   status: RuntimeStatusSchema,
@@ -30,6 +29,9 @@ export const BotRowSchema = z.object({
 export const ListOkSchema = z.object({
   ok: z.literal(true),
   data: z.array(BotRowSchema),
+  page: z.number().int().min(1),
+  pageSize: z.number().int().min(1),
+  total: z.number().int().min(0),
 });
 
 export const ListErrSchema = z.object({

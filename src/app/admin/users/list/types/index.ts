@@ -1,10 +1,8 @@
-// 타입 전용 모듈 (JSX.Element, React.ReactNode 사용 금지)
-
 export type UserRow = {
   id: string;
-  username: string;
-  email: string;
-  name: string;
+  username: string | null;
+  email: string | null;
+  name: string | null;
   countryCode: string | null;
   createdAt: string; // ISO
 };
@@ -12,15 +10,21 @@ export type UserRow = {
 export type UserInfoDetail = {
   id: string;
   userId: string;
-  referralCode: string;
-  level: number;
+  referralCode: string | null;
+  level: number; // int >= 1
   googleOtpEnabled: boolean;
   googleOtpSecret: string | null;
   createdAt: string; // ISO
   updatedAt: string; // ISO
 };
 
-export type ListApiOk = { ok: true; data: UserRow[] };
+export type ListApiOk = {
+  ok: true;
+  data: UserRow[];
+  page: number;
+  pageSize: number;
+  total: number;
+};
 export type ListApiErr = { ok: false; error: string };
 export type ListApiResponse = ListApiOk | ListApiErr;
 
@@ -62,4 +66,10 @@ export type UseUsersListReturn = {
   setEditLevel: (n: number) => void;
   savingLevel: boolean;
   saveLevel: () => void;
+
+  // 페이지네이션
+  page: number;
+  pageSize: number;
+  total: number;
+  setPage: (p: number) => void;
 };

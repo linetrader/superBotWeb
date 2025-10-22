@@ -1,4 +1,3 @@
-// src/app/admin/bots/list/types/index.ts
 export type BotModeStr = "SINGLE" | "MULTI";
 export type RuntimeStatus =
   | "STOPPED"
@@ -10,14 +9,20 @@ export type RuntimeStatus =
 export type BotRow = {
   id: string;
   userId: string;
-  username: string; // ← 추가: 표시용 사용자명
+  username: string; // 표시용 사용자명
   name: string;
   mode: BotModeStr;
   status: RuntimeStatus; // BotRuntime.status (없으면 STOPPED로 취급)
   running: boolean; // status가 STARTING/RUNNING이면 true
 };
 
-export type ListOk = { ok: true; data: BotRow[] };
+export type ListOk = {
+  ok: true;
+  data: BotRow[];
+  page: number;
+  pageSize: number;
+  total: number;
+};
 export type ListErr = { ok: false; error: string };
 export type ListResponse = ListOk | ListErr;
 
@@ -49,4 +54,10 @@ export type UseBotsListReturn = {
   stopping: boolean;
   startSelected: () => void;
   stopSelected: () => void;
+
+  // 페이지네이션
+  page: number;
+  pageSize: number;
+  total: number;
+  setPage: (p: number) => void;
 };

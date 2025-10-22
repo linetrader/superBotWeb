@@ -1,4 +1,3 @@
-// src/app/api/admin/bots/list/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { z } from "zod";
@@ -12,12 +11,17 @@ const listSelect = {
   name: true,
   mode: true,
   BotRuntime: { select: { status: true } },
-  user: { select: { username: true } }, // ← 추가
+  user: { select: { username: true } },
 } as const;
 
 const PatchPayloadSchema = z.object({
   action: z.union([z.literal("START"), z.literal("STOP")]),
   botIds: z.array(z.string().min(1)).min(1),
+});
+
+const PageQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(20), // 기본 20, 최대 100
 });
 
 // BotMode(Prisma enum) → 문자열
@@ -45,8 +49,35 @@ function normalizeRuntimeStatus(s: string | null): BotStatus {
   return (s ?? "STOPPED") as BotStatus;
 }
 
-// GET: 관리자 본인 + 산하(downline) 봇 목록
-export async function GET() {
+/** adminId 기준으로 모든(다단계) 산하 userId 수집 (BFS) */
+async function collectAllDownlineIds(rootUserId: string): Promise<Set<string>> {
+  const visited = new Set<string>();
+  let frontier: string[] = [rootUserId];
+  const MAX_DEPTH = 20;
+  const TAKE_PER_ROUND = 5000;
+
+  for (let depth = 0; depth < MAX_DEPTH && frontier.length > 0; depth += 1) {
+    const edges = await prisma.referralEdge.findMany({
+      where: { parentId: { in: frontier } },
+      select: { childId: true },
+      take: TAKE_PER_ROUND,
+    });
+    if (edges.length === 0) break;
+
+    const next: string[] = [];
+    for (const e of edges) {
+      if (!visited.has(e.childId)) {
+        visited.add(e.childId);
+        next.push(e.childId);
+      }
+    }
+    frontier = next;
+  }
+  return visited; // root 제외: 실제 산하만 포함
+}
+
+// GET: 관리자 본인 + 산하(모든 레벨) 봇 목록 (페이지네이션)
+export async function GET(req: NextRequest) {
   const adminId = await getUserId();
   if (!adminId) {
     return NextResponse.json(
@@ -55,23 +86,38 @@ export async function GET() {
     );
   }
 
-  // 직속 산하 조회
-  const edges = await prisma.referralEdge.findMany({
-    where: { parentId: adminId },
-    select: { childId: true },
-    take: 5_000,
+  const { searchParams } = new URL(req.url);
+  const qp = PageQuerySchema.safeParse({
+    page: searchParams.get("page"),
+    pageSize: searchParams.get("pageSize"),
   });
-  const downlineIds = edges.map((e) => e.childId);
+  if (!qp.success) {
+    return NextResponse.json(
+      { ok: false, error: "INVALID_QUERY" },
+      { status: 400 }
+    );
+  }
+  const page = qp.data.page;
+  const pageSize = qp.data.pageSize;
+  const skip = (page - 1) * pageSize;
+  const take = pageSize;
 
-  // 본인 포함
-  const allowedIdsSet = new Set<string>([adminId, ...downlineIds]);
-  const allowedIds = Array.from(allowedIdsSet);
+  // ✅ 모든 산하 수집 + 본인 포함
+  const downlineSet = await collectAllDownlineIds(adminId);
+  const allowedIds = [adminId, ...downlineSet];
 
+  // total
+  const total = await prisma.tradingBot.count({
+    where: { userId: { in: allowedIds } },
+  });
+
+  // 목록
   const bots = await prisma.tradingBot.findMany({
     where: { userId: { in: allowedIds } },
     select: listSelect,
     orderBy: [{ userId: "asc" }, { updatedAt: "desc" }],
-    take: 1000,
+    skip,
+    take,
   });
 
   const data = bots.map((b) => {
@@ -79,7 +125,7 @@ export async function GET() {
     return {
       id: b.id,
       userId: b.userId,
-      username: b.user?.username ?? b.userId, // ← 추가 (폴백: userId)
+      username: b.user?.username ?? b.userId,
       name: b.name,
       mode: modeToString(b.mode),
       status: f.status,
@@ -87,14 +133,10 @@ export async function GET() {
     };
   });
 
-  return NextResponse.json({ ok: true, data });
+  return NextResponse.json({ ok: true, data, page, pageSize, total });
 }
 
-// PATCH: 선택된 봇 (관리자 본인 + 산하) 일괄 START/STOP
-// 요구사항:
-// - START: 상태 ∈ {STOPPED, STOPPING, ERROR} 인 봇만 신규 START_BOT WorkItem 생성
-// - STOP : 상태 ∈ {STARTING, RUNNING, ERROR} 인 봇만 신규 STOP_BOT  WorkItem 생성
-// - 기존 WorkItem 재큐잉/업데이트 없음. BotRuntime/TradingBot.enabled 변경 없음.
+// PATCH: 선택된 봇 (관리자 본인 + 산하 전체) 일괄 START/STOP
 export async function PATCH(req: NextRequest) {
   const adminId = await getUserId();
   if (!adminId) {
@@ -124,14 +166,9 @@ export async function PATCH(req: NextRequest) {
 
   const { action, botIds } = parsed.data;
 
-  // 직속 산하 + 본인 허용
-  const edges = await prisma.referralEdge.findMany({
-    where: { parentId: adminId },
-    select: { childId: true },
-    take: 5_000,
-  });
-  const downlineIds = edges.map((e) => e.childId);
-  const allowedIdsSet = new Set<string>([adminId, ...downlineIds]);
+  // ✅ 모든 산하 수집 + 본인 포함
+  const downlineSet = await collectAllDownlineIds(adminId);
+  const allowedIdsSet = new Set<string>([adminId, ...downlineSet]);
 
   // 대상 봇 중 "허용된 userId" 소유만 추출 + 현재 상태 포함 조회
   const targetBots = await prisma.tradingBot.findMany({
@@ -199,7 +236,6 @@ export async function PATCH(req: NextRequest) {
             botId: t.id,
             type: START_BOT,
             status: QUEUED,
-            // dedupeKey는 생략(신규 생성만 의도). 필요시 고유 키 생성으로 충돌 회피 가능.
             sqsGroupId: t.id,
             payload: {
               action: "START_BOT",
@@ -235,9 +271,9 @@ export async function PATCH(req: NextRequest) {
   return NextResponse.json({
     ok: true,
     data: {
-      updated: created, // 기존 훅 로직과 호환(토스트 메시지 등)
-      eligible: eligible.length, // 참고 정보
-      requested: botIds.length, // 참고 정보
+      updated: created,
+      eligible: eligible.length,
+      requested: botIds.length,
     },
   });
 }

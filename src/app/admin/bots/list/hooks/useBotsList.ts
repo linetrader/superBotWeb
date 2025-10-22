@@ -16,11 +16,19 @@ export function useBotsList(): UseBotsListReturn {
   const [starting, setStarting] = useState<boolean>(false);
   const [stopping, setStopping] = useState<boolean>(false);
 
+  // 페이지네이션
+  const [page, setPage] = useState<number>(1);
+  const [pageSize] = useState<number>(20); // 고정 20
+  const [total, setTotal] = useState<number>(0);
+
   const fetchList = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/admin/bots/list", { cache: "no-store" });
+      const res = await fetch(
+        `/api/admin/bots/list?page=${page}&pageSize=${pageSize}`,
+        { cache: "no-store" }
+      );
       const json = await res.json();
       const parsed = parseList(json);
       if (!parsed.ok) {
@@ -32,6 +40,7 @@ export function useBotsList(): UseBotsListReturn {
         });
       } else {
         setRows(parsed.data);
+        setTotal(parsed.total);
       }
     } catch {
       setError("NETWORK_ERROR");
@@ -43,7 +52,7 @@ export function useBotsList(): UseBotsListReturn {
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, [toast, page, pageSize]);
 
   useEffect(() => {
     fetchList();
@@ -169,6 +178,10 @@ export function useBotsList(): UseBotsListReturn {
       stopping,
       startSelected,
       stopSelected,
+      page,
+      pageSize,
+      total,
+      setPage,
     }),
     [
       loading,
@@ -183,6 +196,10 @@ export function useBotsList(): UseBotsListReturn {
       stopping,
       startSelected,
       stopSelected,
+      page,
+      pageSize,
+      total,
+      setPage,
     ]
   );
 

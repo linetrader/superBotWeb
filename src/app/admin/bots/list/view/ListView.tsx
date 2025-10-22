@@ -1,4 +1,3 @@
-// src/app/admin/bots/list/view/ListView.tsx
 "use client";
 
 import type { UseBotsListReturn, BotRow } from "../types";
@@ -86,7 +85,6 @@ function BotsTable(props: {
 }) {
   const { rows, selected, onToggle } = props;
 
-  // 헤더를 배열로 생성해 <tr> 하위 공백 텍스트 노드가 생기지 않도록 함
   const headerCells = [
     <th key="_sel" />,
     <th key="username">username</th>,
@@ -104,7 +102,6 @@ function BotsTable(props: {
         <tbody>
           {rows.map((r) => {
             const checked = selected[r.id] === true;
-            // 바디도 배열로 생성하여 공백 텍스트 노드 제거
             const rowCells = [
               <td key="sel">
                 <input
@@ -138,6 +135,36 @@ function BotsTable(props: {
   );
 }
 
+function Pagination(props: {
+  page: number;
+  pageSize: number;
+  total: number;
+  setPage: (p: number) => void;
+}) {
+  const { page, pageSize, total, setPage } = props;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const prev = () => setPage(Math.max(1, page - 1));
+  const next = () => setPage(Math.min(totalPages, page + 1));
+
+  return (
+    <div className="flex items-center justify-center gap-2 mt-3">
+      <button className="btn btn-sm" onClick={prev} disabled={page <= 1}>
+        « 이전
+      </button>
+      <span className="text-sm">
+        {page} / {totalPages} (총 {total}개)
+      </span>
+      <button
+        className="btn btn-sm"
+        onClick={next}
+        disabled={page >= totalPages}
+      >
+        다음 »
+      </button>
+    </div>
+  );
+}
+
 export default function ListView(props: UseBotsListReturn) {
   const {
     loading,
@@ -151,6 +178,10 @@ export default function ListView(props: UseBotsListReturn) {
     stopping,
     startSelected,
     stopSelected,
+    page,
+    pageSize,
+    total,
+    setPage,
   } = props;
 
   const allChecked = rows.length > 0 && rows.every((r) => selected[r.id]);
@@ -181,7 +212,15 @@ export default function ListView(props: UseBotsListReturn) {
           <span>불러오는 중…</span>
         </div>
       ) : (
-        <BotsTable rows={rows} selected={selected} onToggle={toggleOne} />
+        <>
+          <BotsTable rows={rows} selected={selected} onToggle={toggleOne} />
+          <Pagination
+            page={page}
+            pageSize={pageSize}
+            total={total}
+            setPage={setPage}
+          />
+        </>
       )}
     </div>
   );
