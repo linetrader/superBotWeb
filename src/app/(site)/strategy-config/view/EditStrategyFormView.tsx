@@ -1,138 +1,28 @@
-// src/features/strategy-configs/components/EditStrategyForm.tsx
+// src/app/(site)/strategy-config/view/EditStrategyFormView.tsx
 "use client";
 
-import { ChangeEvent, useMemo, useState } from "react";
+import { ChangeEvent } from "react";
 import { StrategyKind } from "@/generated/prisma";
-import { StrategyItem, StrategyUpdateBody } from "@/types/strategy-config";
-import CommonSettingsSection, {
-  CommonFormSlice,
-} from "./CommonSettingsSection";
-import { useToast } from "@/components/ui";
+import type { EditForm } from "../types/common";
+import CommonSettingsSectionView from "./CommonSettingsSectionView";
 
 type Props = {
-  item: StrategyItem;
-  onUpdate: (body: StrategyUpdateBody) => Promise<void>;
-  onClose: () => void;
+  form: EditForm;
+  setForm: (updater: (prev: EditForm) => EditForm) => void;
+  updating: boolean;
   disabled?: boolean;
+  onUpdateClick: () => void;
+  onClose: () => void;
 };
 
-type EditForm = CommonFormSlice & {
-  id: string;
-
-  // BOX
-  lowerTh: string;
-  upperTh: string;
-  boxTouchPct: string;
-
-  // TREND
-  trendRsiUpperPullback: string;
-  trendRsiLowerPullback: string;
-};
-
-function parseFloatOrNull(s: string): number | null {
-  return s.trim() === "" ? null : Number.parseFloat(s);
-}
-function parseFloatOrUndefined(s: string): number | undefined {
-  return s.trim() === "" ? undefined : Number.parseFloat(s);
-}
-
-export default function EditStrategyForm({
-  item,
-  onUpdate,
-  onClose,
+export default function EditStrategyFormView({
+  form,
+  setForm,
+  updating,
   disabled = false,
+  onUpdateClick,
+  onClose,
 }: Props) {
-  const { toast } = useToast();
-
-  const init: EditForm = useMemo(
-    () => ({
-      id: item.id,
-      name: item.name,
-      kind: item.kind,
-
-      useMartin: item.useMartin,
-      martinMultiplier: String(item.martinMultiplier),
-      defaultSize: String(item.defaultSize),
-      maxSize: String(item.maxSize),
-      targetProfit: String(item.targetProfit),
-      leverage: String(item.leverage),
-      timeframe: item.timeframe,
-      enabled: item.enabled,
-      rsiLength: String(item.rsiLength),
-
-      lowerTh: item.lowerTh === null ? "" : String(item.lowerTh),
-      upperTh: item.upperTh === null ? "" : String(item.upperTh),
-      boxTouchPct: item.boxTouchPct === null ? "" : String(item.boxTouchPct),
-
-      trendRsiUpperPullback:
-        item.trendRsiUpperPullback === null
-          ? ""
-          : String(item.trendRsiUpperPullback),
-      trendRsiLowerPullback:
-        item.trendRsiLowerPullback === null
-          ? ""
-          : String(item.trendRsiLowerPullback),
-    }),
-    [item]
-  );
-
-  const [form, setForm] = useState<EditForm>(init);
-  const [updating, setUpdating] = useState<boolean>(false);
-
-  async function handleUpdate(): Promise<void> {
-    setUpdating(true);
-    try {
-      const body: StrategyUpdateBody = {
-        id: form.id,
-        kind: form.kind,
-      };
-
-      const nameTrim = form.name.trim();
-      if (nameTrim.length > 0) body.name = nameTrim;
-
-      // 공통
-      body.useMartin = form.useMartin;
-      body.martinMultiplier = Number.parseFloat(form.martinMultiplier);
-      body.defaultSize = Number.parseInt(form.defaultSize, 10);
-      body.maxSize = Number.parseInt(form.maxSize, 10);
-      body.targetProfit = Number.parseFloat(form.targetProfit);
-      body.leverage = Number.parseInt(form.leverage, 10);
-      body.timeframe = form.timeframe;
-      body.enabled = form.enabled;
-      body.rsiLength = Number.parseInt(form.rsiLength, 10);
-
-      const showTrend =
-        form.kind === StrategyKind.TREND || form.kind === StrategyKind.BOTH;
-      const showBox =
-        form.kind === StrategyKind.BOX || form.kind === StrategyKind.BOTH;
-
-      if (showTrend) {
-        body.trend = {
-          trendRsiUpperPullback: parseFloatOrNull(form.trendRsiUpperPullback),
-          trendRsiLowerPullback: parseFloatOrNull(form.trendRsiLowerPullback),
-        };
-      }
-      if (showBox) {
-        body.box = {
-          lowerTh: parseFloatOrUndefined(form.lowerTh),
-          upperTh: parseFloatOrUndefined(form.upperTh),
-          boxTouchPct: parseFloatOrNull(form.boxTouchPct),
-        };
-      }
-
-      await onUpdate(body);
-      toast({ title: "수정 완료", description: "전략이 수정되었습니다." });
-    } catch {
-      toast({
-        title: "수정 실패",
-        description: "입력을 확인해주세요.",
-        variant: "error",
-      });
-    } finally {
-      setUpdating(false);
-    }
-  }
-
   const showTrend =
     form.kind === StrategyKind.TREND || form.kind === StrategyKind.BOTH;
   const showBox =
@@ -148,7 +38,7 @@ export default function EditStrategyForm({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="form-control">
               <label htmlFor="id" className="label">
-                <span className="label-text">ID</span>
+                <span className="label-text">아이디</span>
               </label>
               <input
                 id="id"
@@ -160,24 +50,21 @@ export default function EditStrategyForm({
           </div>
         </section>
 
-        <CommonSettingsSection
+        <CommonSettingsSectionView
           form={form}
-          setForm={(updater) =>
-            setForm((prev) => ({ ...prev, ...updater(prev) }))
-          }
+          setForm={(u) => setForm((prev) => ({ ...prev, ...u(prev) }))}
           disabled={updating || disabled}
         />
 
-        {/* Trend 섹션 */}
         {showTrend && (
           <section className="rounded-2xl border border-base-300 p-4">
             <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-sm font-semibold">Trend 설정</h3>
+              <h3 className="text-sm font-semibold">트렌드 설정</h3>
             </div>
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               <div className="form-control">
                 <label htmlFor="trend-upper" className="label">
-                  <span className="label-text">Trend RSI Pullback Upper</span>
+                  <span className="label-text">트렌드 풀백 상단</span>
                 </label>
                 <input
                   id="trend-upper"
@@ -195,7 +82,7 @@ export default function EditStrategyForm({
               </div>
               <div className="form-control">
                 <label htmlFor="trend-lower" className="label">
-                  <span className="label-text">Trend RSI Pullback Lower</span>
+                  <span className="label-text">트렌드 풀백 하단</span>
                 </label>
                 <input
                   id="trend-lower"
@@ -215,16 +102,15 @@ export default function EditStrategyForm({
           </section>
         )}
 
-        {/* Box 섹션 */}
         {showBox && (
           <section className="rounded-2xl border border-base-300 p-4">
             <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-sm font-semibold">Box 설정</h3>
+              <h3 className="text-sm font-semibold">박스 설정</h3>
             </div>
             <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
               <div className="form-control">
                 <label htmlFor="box-lower" className="label">
-                  <span className="label-text">RSI Lower</span>
+                  <span className="label-text">하단</span>
                 </label>
                 <input
                   id="box-lower"
@@ -239,7 +125,7 @@ export default function EditStrategyForm({
               </div>
               <div className="form-control">
                 <label htmlFor="box-upper" className="label">
-                  <span className="label-text">RSI Upper</span>
+                  <span className="label-text">상단</span>
                 </label>
                 <input
                   id="box-upper"
@@ -254,7 +140,7 @@ export default function EditStrategyForm({
               </div>
               <div className="form-control">
                 <label htmlFor="box-touch" className="label">
-                  <span className="label-text">Box Touch %</span>
+                  <span className="label-text">박스 터치 %</span>
                 </label>
                 <input
                   id="box-touch"
@@ -277,7 +163,7 @@ export default function EditStrategyForm({
             type="button"
             className="btn btn-primary"
             disabled={updating || disabled}
-            onClick={() => void handleUpdate()}
+            onClick={onUpdateClick}
           >
             {updating ? "수정 중…" : "수정 저장"}
           </button>

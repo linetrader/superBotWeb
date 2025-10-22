@@ -1,30 +1,12 @@
-// src/features/strategy-configs/components/CommonSettingsSection.tsx
+// src/app/(site)/strategy-config/view/CommonSettingsSectionView.tsx
 "use client";
 
 import { ChangeEvent } from "react";
 import { Timeframe, StrategyKind } from "@/generated/prisma";
-
-export type CommonFormSlice = {
-  name: string;
-  kind: StrategyKind;
-
-  // 공통
-  useMartin: boolean;
-  martinMultiplier: string;
-  defaultSize: string;
-  maxSize: string;
-  targetProfit: string;
-  leverage: string;
-  timeframe: Timeframe;
-  enabled: boolean;
-
-  // 숫자 입력(문자) — 서버 전송 시 숫자로 변환
-  rsiLength: string;
-};
+import type { CommonFormSlice } from "../types/common";
 
 type Props = {
   form: CommonFormSlice;
-  /** 부분 갱신만 돌려주면 부모에서 병합합니다 */
   setForm: (
     updater: (prev: CommonFormSlice) => Partial<CommonFormSlice>
   ) => void;
@@ -40,7 +22,7 @@ const DEFAULT_KIND_OPTIONS: readonly StrategyKind[] = [
   StrategyKind.BOTH,
 ] as const;
 
-export default function CommonSettingsSection({
+export default function CommonSettingsSectionView({
   form,
   setForm,
   timeframeOptions = DEFAULT_TF_OPTIONS,
@@ -52,10 +34,10 @@ export default function CommonSettingsSection({
       <h3 className="mb-3 text-sm font-semibold">공통 설정</h3>
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-        {/* Name */}
+        {/* 이름 */}
         <div className="form-control">
           <label htmlFor="name" className="label">
-            <span className="label-text">Name</span>
+            <span className="label-text">이름</span>
           </label>
           <input
             id="name"
@@ -69,10 +51,10 @@ export default function CommonSettingsSection({
           />
         </div>
 
-        {/* Strategy Kind */}
+        {/* 전략 종류 */}
         <div className="form-control">
           <label htmlFor="kind" className="label">
-            <span className="label-text">Strategy Kind</span>
+            <span className="label-text">전략 종류</span>
           </label>
           <select
             id="kind"
@@ -91,10 +73,10 @@ export default function CommonSettingsSection({
           </select>
         </div>
 
-        {/* RSI Length (공통) */}
+        {/* RSI 길이(공통) */}
         <div className="form-control">
           <label htmlFor="rsi-length" className="label">
-            <span className="label-text">RSI Length (공통)</span>
+            <span className="label-text">분봉 분석 갯수</span>
           </label>
           <input
             id="rsi-length"
@@ -108,10 +90,10 @@ export default function CommonSettingsSection({
           />
         </div>
 
-        {/* Timeframe */}
+        {/* 타임프레임 */}
         <div className="form-control">
           <label htmlFor="timeframe" className="label">
-            <span className="label-text">Timeframe</span>
+            <span className="label-text">타임프레임</span>
           </label>
           <select
             id="timeframe"
@@ -130,10 +112,10 @@ export default function CommonSettingsSection({
           </select>
         </div>
 
-        {/* Target Profit / Leverage */}
+        {/* 목표 수익률 / 레버리지 */}
         <div className="form-control">
           <label className="label">
-            <span className="label-text">Target Profit / Leverage</span>
+            <span className="label-text">목표 수익률 / 레버리지</span>
           </label>
           <div className="grid grid-cols-2 gap-2">
             <input
@@ -161,10 +143,10 @@ export default function CommonSettingsSection({
           </div>
         </div>
 
-        {/* Default / Max Size */}
+        {/* 기본 수량 / 최대 수량 */}
         <div className="form-control">
           <label className="label">
-            <span className="label-text">Default / Max Size</span>
+            <span className="label-text">기본 수량 / 최대 수량</span>
           </label>
           <div className="grid grid-cols-2 gap-2">
             <input
@@ -192,10 +174,28 @@ export default function CommonSettingsSection({
           </div>
         </div>
 
-        {/* Martin Multiplier */}
+        {/* 마틴 사용 토글 */}
+        <div className="md:col-span-2 flex flex-wrap gap-x-6 gap-y-2">
+          <label className="label cursor-pointer gap-2">
+            <input
+              type="checkbox"
+              className="checkbox checkbox-sm"
+              checked={form.useMartin}
+              disabled={disabled}
+              onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                setForm(() => ({ useMartin: e.target.checked }))
+              }
+            />
+            <span className="label-text">마틴 사용</span>
+          </label>
+
+          {/* enabled 토글은 제거(항상 true 고정) */}
+        </div>
+
+        {/* 마틴 배수 */}
         <div className="form-control">
           <label htmlFor="martin-multiplier" className="label">
-            <span className="label-text">Martin Multiplier</span>
+            <span className="label-text">마틴 배수</span>
           </label>
           <input
             id="martin-multiplier"
@@ -208,35 +208,6 @@ export default function CommonSettingsSection({
               setForm(() => ({ martinMultiplier: e.target.value }))
             }
           />
-        </div>
-
-        {/* 토글들 */}
-        <div className="md:col-span-2 flex flex-wrap gap-x-6 gap-y-2">
-          <label className="label cursor-pointer gap-2">
-            <input
-              type="checkbox"
-              className="checkbox checkbox-sm"
-              checked={form.useMartin}
-              disabled={disabled}
-              onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                setForm(() => ({ useMartin: e.target.checked }))
-              }
-            />
-            <span className="label-text">Use Martin</span>
-          </label>
-
-          <label className="label cursor-pointer gap-2">
-            <input
-              type="checkbox"
-              className="checkbox checkbox-sm"
-              checked={form.enabled}
-              disabled={disabled}
-              onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                setForm(() => ({ enabled: e.target.checked }))
-              }
-            />
-            <span className="label-text">Enabled</span>
-          </label>
         </div>
       </div>
     </section>

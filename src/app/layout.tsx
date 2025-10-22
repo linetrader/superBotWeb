@@ -1,4 +1,5 @@
 // app/layout.tsx
+import { ToastProvider } from "@/components/ui";
 import "@/styles/globals.css";
 
 export default function RootLayout({
@@ -11,7 +12,7 @@ export default function RootLayout({
     <html lang="en" data-theme="dark" suppressHydrationWarning>
       {/* 전역 배경/텍스트, 높이만 설정 */}
       <body className="min-h-dvh m-0 bg-base-200 text-base-content">
-        {children}
+        <ToastProvider>{children}</ToastProvider>
       </body>
     </html>
   );

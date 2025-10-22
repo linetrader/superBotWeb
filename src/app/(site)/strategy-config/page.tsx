@@ -1,4 +1,3 @@
-// src/app/strategy-configs/page.tsx
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
@@ -9,9 +8,11 @@ import type {
   StrategyUpdateBody,
 } from "@/types/strategy-config";
 import { useStrategyConfigs } from "./hooks/useStrategyConfigs";
-import { StrategyConfigsTable } from "./components/StrategyConfigsTable";
-import CreateStrategyForm from "./components/CreateStrategyForm";
-import EditStrategyForm from "./components/EditStrategyForm";
+import { useCreateStrategyForm } from "./hooks/useCreateStrategyForm";
+import { useStrategyConfigsTable } from "./hooks/useStrategyConfigsTable";
+import CreateStrategyFormView from "./view/CreateStrategyFormView";
+import StrategyConfigsTableView from "./view/StrategyConfigsTableView";
+import EditStrategyPanel from "./view/EditStrategyPanel";
 
 export default function StrategyConfigsPage() {
   const {
@@ -92,36 +93,49 @@ export default function StrategyConfigsPage() {
 
   const selectedCount = useMemo(() => selectedIds.size, [selectedIds]);
 
+  // view hooks
+  const createHook = useCreateStrategyForm({ onCreate, error, setError });
+  const tableHook = useStrategyConfigsTable({
+    items,
+    selectedIds,
+    onToggleRow,
+    onToggleAll,
+    onDeleteSelected,
+    onRowClick,
+    loading,
+    error,
+  });
+
   return (
     <Section className="mx-auto max-w-5xl p-4">
       <Caption className="mb-3">Strategy Configs</Caption>
 
-      <CreateStrategyForm
-        onCreate={onCreate}
-        error={error}
-        setError={setError}
+      <CreateStrategyFormView
+        form={createHook.form}
+        setForm={createHook.setForm}
+        creating={createHook.creating}
+        error={createHook.error}
+        onCreateClick={createHook.onCreateClick}
       />
 
-      <StrategyConfigsTable
-        items={items}
-        selectedIds={selectedIds}
-        onToggleRow={onToggleRow}
-        onToggleAll={onToggleAll}
-        onDeleteSelected={onDeleteSelected}
-        onRowClick={onRowClick}
-        loading={loading}
-        error={error}
+      <StrategyConfigsTableView
+        rows={tableHook.rows}
+        allSelected={tableHook.allSelected}
+        selectedCount={tableHook.selectedCount}
+        loading={tableHook.loading}
+        onToggleAll={tableHook.onToggleAll}
+        onRowClick={tableHook.onRowClick}
+        onToggleRow={tableHook.onToggleRow}
+        onDeleteSelected={tableHook.onDeleteSelected}
       />
 
-      {editTarget && (
-        <EditStrategyForm
-          item={editTarget}
-          onUpdate={onUpdate}
-          onClose={() => setEditTarget(null)}
-        />
-      )}
+      {/* ✅ 훅을 별도 컴포넌트로 분리하여 조건부 렌더링 */}
+      <EditStrategyPanel
+        editTarget={editTarget}
+        onUpdate={onUpdate}
+        onClose={() => setEditTarget(null)}
+      />
 
-      {/* 선택된 개수 보조 표기 (선택사항) */}
       {selectedCount > 0 && (
         <p className="mt-2 text-xs text-base-content/60">
           선택: {selectedCount}개

@@ -85,24 +85,16 @@ function buildCreateData(
     name: safeName,
     kind: body.kind,
 
-    // ✅ 공통(현재 모델에 존재하는 모든 필드: optional 전달 시만 반영)
-    ...(body.useMartin !== undefined ? { useMartin: body.useMartin } : {}),
-    // ✂️ removed: martinOnLossWebsea
-    ...(body.martinMultiplier !== undefined
-      ? { martinMultiplier: body.martinMultiplier }
-      : {}),
-    // ✂️ removed: entryForwardEnabled
-    ...(body.defaultSize !== undefined
-      ? { defaultSize: body.defaultSize }
-      : {}),
-    ...(body.maxSize !== undefined ? { maxSize: body.maxSize } : {}),
-    ...(body.targetProfit !== undefined
-      ? { targetProfit: body.targetProfit }
-      : {}),
-    ...(body.leverage !== undefined ? { leverage: body.leverage } : {}),
-    ...(body.timeframe !== undefined ? { timeframe: body.timeframe } : {}),
-    ...(body.enabled !== undefined ? { enabled: body.enabled } : {}),
-    ...(body.rsiLength !== undefined ? { rsiLength: body.rsiLength } : {}),
+    // ✅ 공통
+    useMartin: body.useMartin ?? false,
+    martinMultiplier: body.martinMultiplier ?? 2.0,
+    defaultSize: body.defaultSize ?? 0,
+    maxSize: body.maxSize ?? 0,
+    targetProfit: body.targetProfit ?? 0,
+    leverage: body.leverage ?? 1,
+    timeframe: body.timeframe,
+    enabled: true, // ← 항상 true로 고정
+    rsiLength: body.rsiLength ?? 14,
 
     // 하위(1:1)
     ...(hasTrend(body.kind)
@@ -139,13 +131,11 @@ function buildUpdateData(
     ...(body.kind !== undefined ? { kind: body.kind } : {}),
     ...(body.rsiLength !== undefined ? { rsiLength: body.rsiLength } : {}),
 
-    // ✅ 공통(부분 수정)
+    // ✅ 공통(부분 수정) — enabled 업데이트는 제거
     ...(body.useMartin !== undefined ? { useMartin: body.useMartin } : {}),
-    // ✂️ removed: martinOnLossWebsea
     ...(body.martinMultiplier !== undefined
       ? { martinMultiplier: body.martinMultiplier }
       : {}),
-    // ✂️ removed: entryForwardEnabled
     ...(body.defaultSize !== undefined
       ? { defaultSize: body.defaultSize }
       : {}),
@@ -155,7 +145,8 @@ function buildUpdateData(
       : {}),
     ...(body.leverage !== undefined ? { leverage: body.leverage } : {}),
     ...(body.timeframe !== undefined ? { timeframe: body.timeframe } : {}),
-    ...(body.enabled !== undefined ? { enabled: body.enabled } : {}),
+    // enabled: true 를 강제 업데이트하지는 않음 (생성 시에 true), 필요시 주석 해제:
+    // enabled: true,
   };
 
   return data;
@@ -264,7 +255,6 @@ export async function PUT(req: NextRequest): Promise<NextResponse> {
       const effectiveKind = updated.kind;
 
       if (willChangeKind) {
-        // 필요 없는 하위 제거
         if (!hasTrend(effectiveKind) && updated.trend) {
           await tx.trendStrategy.delete({
             where: { strategyConfigId: updated.id },
@@ -275,7 +265,6 @@ export async function PUT(req: NextRequest): Promise<NextResponse> {
             where: { strategyConfigId: updated.id },
           });
         }
-        // 필요한 하위 보충
         if (hasTrend(effectiveKind) && !updated.trend) {
           await tx.trendStrategy.create({
             data: {
@@ -296,7 +285,6 @@ export async function PUT(req: NextRequest): Promise<NextResponse> {
           });
         }
       } else {
-        // 부분 업데이트
         if (hasTrend(effectiveKind) && body.trend) {
           await tx.trendStrategy.update({
             where: { strategyConfigId: updated.id },
@@ -400,17 +388,14 @@ function mapRowToItem(r: StrategyConfigWithRelations): StrategyItem {
     name: r.name,
     kind,
 
-    // ✅ 공통 필드만 포함
     useMartin: r.useMartin,
-    // ✂️ removed: martinOnLossWebsea
     martinMultiplier: r.martinMultiplier,
-    // ✂️ removed: entryForwardEnabled
     defaultSize: r.defaultSize,
     maxSize: r.maxSize,
     targetProfit: r.targetProfit,
     leverage: r.leverage,
     timeframe: r.timeframe,
-    enabled: r.enabled,
+    enabled: true, // 생성 시 true, 클라이언트 표시용 고정
     rsiLength: r.rsiLength,
 
     createdAt: r.createdAt.toISOString(),
@@ -419,11 +404,9 @@ function mapRowToItem(r: StrategyConfigWithRelations): StrategyItem {
 
   return {
     ...base,
-    // BOX 전용
     lowerTh: hasBox(kind) ? (r.box?.lowerTh ?? 30) : null,
     upperTh: hasBox(kind) ? (r.box?.upperTh ?? 70) : null,
     boxTouchPct: hasBox(kind) ? (r.box?.boxTouchPct ?? null) : null,
-    // TREND 전용
     trendRsiUpperPullback: hasTrend(kind)
       ? (r.trend?.trendRsiUpperPullback ?? null)
       : null,

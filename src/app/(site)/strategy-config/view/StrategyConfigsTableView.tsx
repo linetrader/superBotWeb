@@ -1,72 +1,30 @@
 "use client";
 
-import { ChangeEvent, useEffect } from "react";
-import { useToast } from "@/components/ui";
-import type { StrategyItem } from "@/types/strategy-config";
+import { ChangeEvent } from "react";
+import type { StrategyRow } from "../types/table";
 
 type Props = {
-  items: StrategyItem[];
-  selectedIds: Set<string>;
-  onToggleRow: (idx: number, checked: boolean) => void;
+  rows: StrategyRow[];
+  allSelected: boolean;
+  selectedCount: number;
+  loading: boolean;
   onToggleAll: (checked: boolean) => void;
-  onDeleteSelected: () => void;
   onRowClick: (idx: number) => void;
-  loading?: boolean;
-  error?: string;
+  onToggleRow: (idx: number, checked: boolean) => void;
+  onDeleteSelected: () => void;
 };
 
-export function StrategyConfigsTable({
-  items,
-  selectedIds,
-  onToggleRow,
+export default function StrategyConfigsTableView({
+  rows,
+  allSelected,
+  selectedCount,
+  loading,
   onToggleAll,
-  onDeleteSelected,
   onRowClick,
-  loading = false,
-  error = "",
+  onToggleRow,
+  onDeleteSelected,
 }: Props) {
-  const { toast } = useToast();
-
-  useEffect(() => {
-    if (error && error.trim().length > 0) {
-      toast({ title: "에러", description: error, variant: "error" });
-    }
-  }, [error, toast]);
-
-  const allSelected =
-    items.length > 0 && items.every((it) => selectedIds.has(it.id));
-
   const headLabels = ["수정시각", "시장", "이름", "종류", "세부설정"] as const;
-
-  function detailText(it: StrategyItem): string {
-    if (it.kind === "TREND") {
-      const upper = it.trendRsiUpperPullback ?? "-";
-      const lower = it.trendRsiLowerPullback ?? "-";
-      return `len:${it.rsiLength}, pullback U:${upper}/L:${lower}`;
-    }
-    if (it.kind === "BOX") {
-      const low = it.lowerTh ?? "-";
-      const up = it.upperTh ?? "-";
-      const touch = it.boxTouchPct ?? "-";
-      return `RSI ${low}~${up}, touch:${touch}`;
-    }
-    // BOTH
-    const low = it.lowerTh ?? "-";
-    const up = it.upperTh ?? "-";
-    const touch = it.boxTouchPct ?? "-";
-    const upper = it.trendRsiUpperPullback ?? "-";
-    const lower = it.trendRsiLowerPullback ?? "-";
-    return `BOX: ${low}~${up}, touch:${touch} | TREND: len:${it.rsiLength}, U:${upper}/L:${lower}`;
-  }
-
-  const rows = items.map((it, idx) => ({
-    idx,
-    checked: selectedIds.has(it.id),
-    updatedAt: new Date(it.updatedAt).toLocaleString(),
-    name: it.name,
-    kind: it.kind,
-    detail: detailText(it),
-  }));
 
   return (
     <div className="card bg-base-100 shadow mb-4">
@@ -76,20 +34,14 @@ export function StrategyConfigsTable({
           <div className="flex gap-2">
             <button
               type="button"
-              className={`btn btn-primary btn-sm ${
-                selectedIds.size === 0 ? "btn-disabled" : ""
-              }`}
+              className={`btn btn-primary btn-sm ${selectedCount === 0 ? "btn-disabled" : ""}`}
               onClick={() => {
-                if (selectedIds.size === 0) return;
+                if (selectedCount === 0) return;
                 onDeleteSelected();
-                toast({
-                  title: "삭제 요청",
-                  description: `선택한 ${selectedIds.size}개 전략 삭제를 요청했습니다.`,
-                });
               }}
-              disabled={selectedIds.size === 0}
+              disabled={selectedCount === 0}
             >
-              {`선택 삭제 (${selectedIds.size})`}
+              {`선택 삭제 (${selectedCount})`}
             </button>
           </div>
         </div>
@@ -139,7 +91,7 @@ export function StrategyConfigsTable({
                 </tr>
               ))}
 
-              {items.length === 0 && !loading && (
+              {rows.length === 0 && !loading && (
                 <tr>
                   <td colSpan={headLabels.length + 1}>
                     <div className="p-4 text-sm text-base-content/60">

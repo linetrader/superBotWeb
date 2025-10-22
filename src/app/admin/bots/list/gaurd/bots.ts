@@ -1,0 +1,85 @@
+// src/app/admin/bots/list/gaurd/bots.ts
+import { z } from "zod";
+import type {
+  BotRow,
+  BulkAction,
+  BulkUpdatePayload,
+  BulkUpdateResponse,
+  ListResponse,
+  RuntimeStatus,
+} from "../types";
+
+export const RuntimeStatusSchema = z.union([
+  z.literal("STOPPED"),
+  z.literal("STARTING"),
+  z.literal("RUNNING"),
+  z.literal("STOPPING"),
+  z.literal("ERROR"),
+]);
+
+export const BotRowSchema = z.object({
+  id: z.string().min(1),
+  userId: z.string().min(1),
+  username: z.string().min(1), // ← 추가
+  name: z.string().min(1),
+  mode: z.union([z.literal("SINGLE"), z.literal("MULTI")]),
+  status: RuntimeStatusSchema,
+  running: z.boolean(),
+});
+
+export const ListOkSchema = z.object({
+  ok: z.literal(true),
+  data: z.array(BotRowSchema),
+});
+
+export const ListErrSchema = z.object({
+  ok: z.literal(false),
+  error: z.string(),
+});
+
+export const ListResponseSchema = z.union([ListOkSchema, ListErrSchema]);
+
+export function parseList(json: unknown): ListResponse {
+  const r = ListResponseSchema.safeParse(json);
+  if (!r.success) return { ok: false, error: "INVALID_RESPONSE" };
+  return r.data;
+}
+
+export const BulkActionSchema: z.ZodType<BulkAction> = z.union([
+  z.literal("START"),
+  z.literal("STOP"),
+]);
+
+export const BulkUpdatePayloadSchema: z.ZodType<BulkUpdatePayload> = z.object({
+  action: BulkActionSchema,
+  botIds: z.array(z.string().min(1)).min(1),
+});
+
+export const BulkUpdateOkSchema = z.object({
+  ok: z.literal(true),
+  data: z.object({ updated: z.number().int().nonnegative() }),
+});
+
+export const BulkUpdateErrSchema = z.object({
+  ok: z.literal(false),
+  error: z.string(),
+});
+
+export const BulkUpdateResponseSchema: z.ZodType<BulkUpdateResponse> = z.union([
+  BulkUpdateOkSchema,
+  BulkUpdateErrSchema,
+]);
+
+export function parseBulkUpdate(json: unknown): BulkUpdateResponse {
+  const r = BulkUpdateResponseSchema.safeParse(json);
+  if (!r.success) return { ok: false, error: "INVALID_RESPONSE" };
+  return r.data;
+}
+
+export function isBotRow(x: unknown): x is BotRow {
+  return BotRowSchema.safeParse(x).success;
+}
+
+export function isRuntimeStatus(x: unknown): x is RuntimeStatus {
+  return RuntimeStatusSchema.safeParse(x).success;
+}

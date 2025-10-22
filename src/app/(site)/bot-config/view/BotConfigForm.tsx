@@ -83,7 +83,11 @@ export default function BotConfigForm() {
       } else {
         toast({
           title: "저장 실패",
-          description: `${res.error}${typeof (res as { code?: unknown }).code === "string" ? ` (${(res as { code?: string }).code})` : ""}`,
+          description: `${res.error}${
+            typeof (res as { code?: unknown }).code === "string"
+              ? ` (${(res as { code?: string }).code})`
+              : ""
+          }`,
           variant: "error",
         });
         form.setSubmit({
@@ -146,16 +150,23 @@ export default function BotConfigForm() {
               />
             </div>
 
+            {/* ▼ 변경: 심볼 입력 → 셀렉트 */}
             <div className="form-control">
               <label className="label">
                 <span className="label-text">심볼</span>
               </label>
-              <input
-                className="input input-bordered"
+              <select
+                className="select select-bordered"
                 value={form.symbol}
                 onChange={(e) => form.setSymbol(e.target.value)}
-                placeholder="e.g. BTCUSDT"
-              />
+              >
+                <option value="">심볼 선택</option>
+                <option value="BTCUSDT">BTCUSDT</option>
+                <option value="ETHUSDT">ETHUSDT</option>
+                <option value="XRPUSDT">XRPUSDT</option>
+                <option value="SOLUSDT">SOLUSDT</option>
+                <option value="DOGEUSDT">DOGEUSDT</option>
+              </select>
             </div>
 
             <div className="form-control">
