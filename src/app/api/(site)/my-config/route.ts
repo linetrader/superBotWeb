@@ -1,21 +1,20 @@
-// src/app/api/credentials/route.ts
+// src/app/api/(site)/my-config/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { ZodError } from "zod";
-//import { Prisma } from "@prisma/client";
 import { Prisma } from "@/generated/prisma";
 import { prisma } from "@/lib/prisma";
 import { encryptAesGcm, getAes256GcmKeyFromEnv } from "@/lib/crypto";
 import { getUserId } from "@/lib/request-user";
 import {
-  PostBodySchema,
-  SaveResultSchema,
-  HistoryListSchema,
   DeleteBodySchema,
+  DeleteResult,
   DeleteResultSchema,
-  type SaveResult,
-  type ErrorResponse,
-  type DeleteResult,
-} from "@/types/my-config";
+  ErrorResponse,
+  HistoryListSchema,
+  PostBodySchema,
+  SaveResult,
+  SaveResultSchema,
+} from "@/app/(site)/my-config/types";
 
 export const runtime = "nodejs";
 
@@ -29,7 +28,7 @@ function jsonError(
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     const json = await req.json();
-    const body = PostBodySchema.parse(json); // 입력 검증 (Zod)
+    const body = PostBodySchema.parse(json); // UID 포함 검증
 
     const userId = await getUserId();
     if (!userId) return jsonError(401, { error: "Unauthorized" });
@@ -40,7 +39,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     });
     if (!exchange) return jsonError(404, { error: "Exchange not found" });
 
-    // AES-256-GCM 키 획득 및 암호화
+    // AES-256-GCM 키 획득 및 암호화 (키/시크릿만 암호화, UID는 평문 저장)
     const key = getAes256GcmKeyFromEnv();
     const apiKeyEnc = encryptAesGcm(body.apiKey, key);
     const apiSecretEnc = encryptAesGcm(body.apiSecret, key);
@@ -50,6 +49,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       create: {
         userId,
         exchangeId: exchange.id,
+        exchangeUid: body.uid, // 저장
         apiKeyCipher: apiKeyEnc.cipherTextB64,
         apiKeyIv: apiKeyEnc.ivB64,
         apiKeyTag: apiKeyEnc.tagB64,
@@ -60,6 +60,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         keyVersion: 1,
       },
       update: {
+        exchangeUid: body.uid, // 업데이트 시 반영
         apiKeyCipher: apiKeyEnc.cipherTextB64,
         apiKeyIv: apiKeyEnc.ivB64,
         apiKeyTag: apiKeyEnc.tagB64,
@@ -103,6 +104,7 @@ export async function GET(): Promise<NextResponse> {
       id: r.id,
       exchangeCode: r.exchange.code,
       exchangeName: r.exchange.name,
+      uid: r.exchangeUid ?? undefined, // UID 포함 (레거시 null 보호)
       createdAt: r.createdAt.toISOString(),
       updatedAt: r.updatedAt.toISOString(),
     }));
@@ -120,7 +122,6 @@ export async function GET(): Promise<NextResponse> {
   }
 }
 
-// ✅ DELETE: 사용자×거래소 조합의 자격 증명 삭제
 export async function DELETE(req: NextRequest): Promise<NextResponse> {
   try {
     const userId = await getUserId();
@@ -135,7 +136,6 @@ export async function DELETE(req: NextRequest): Promise<NextResponse> {
     });
     if (!exchange) return jsonError(404, { error: "Exchange not found" });
 
-    // 존재하지 않으면 Prisma가 P2025를 던짐
     const deleted = await prisma.exchangeCredential.delete({
       where: { userId_exchangeId: { userId, exchangeId: exchange.id } },
       select: { id: true },
@@ -157,7 +157,6 @@ export async function DELETE(req: NextRequest): Promise<NextResponse> {
       err instanceof Prisma.PrismaClientKnownRequestError &&
       err.code === "P2025"
     ) {
-      // 삭제 대상 없음
       return jsonError(404, { error: "Credential not found" });
     }
     return jsonError(500, { error: "INTERNAL_ERROR" });

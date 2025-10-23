@@ -30,6 +30,14 @@ const navTree: NavNode[] = [
       { label: "봇 컨트롤", href: "/admin/bots/control" },
     ],
   },
+  {
+    label: "거래소 관리",
+    children: [
+      { label: "거래소 목록", href: "/admin/exchanges/list" },
+      { label: "마켓 관리", href: "/admin/exchanges/market" },
+      { label: "거래소 API 관리", href: "/admin/exchanges/credential" },
+    ],
+  },
 
   // {
   //   label: "지갑 관리",

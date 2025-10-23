@@ -56,6 +56,9 @@ model ExchangeCredential {
   keyAlg       String @default("aes-256-gcm")
   keyVersion   Int    @default(1)
 
+  // ✅ 신규 필드: 거래소 계정 UID (초기엔 NULL 허용)
+  exchangeUid String? @db.VarChar(64)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

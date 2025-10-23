@@ -109,21 +109,6 @@ export default function EditStrategyFormView({
             </div>
             <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
               <div className="form-control">
-                <label htmlFor="box-lower" className="label">
-                  <span className="label-text">하단</span>
-                </label>
-                <input
-                  id="box-lower"
-                  className="input input-bordered"
-                  inputMode="decimal"
-                  value={form.lowerTh}
-                  disabled={updating || disabled}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                    setForm((s) => ({ ...s, lowerTh: e.target.value }))
-                  }
-                />
-              </div>
-              <div className="form-control">
                 <label htmlFor="box-upper" className="label">
                   <span className="label-text">상단</span>
                 </label>
@@ -135,6 +120,21 @@ export default function EditStrategyFormView({
                   disabled={updating || disabled}
                   onChange={(e: ChangeEvent<HTMLInputElement>) =>
                     setForm((s) => ({ ...s, upperTh: e.target.value }))
+                  }
+                />
+              </div>
+              <div className="form-control">
+                <label htmlFor="box-lower" className="label">
+                  <span className="label-text">하단</span>
+                </label>
+                <input
+                  id="box-lower"
+                  className="input input-bordered"
+                  inputMode="decimal"
+                  value={form.lowerTh}
+                  disabled={updating || disabled}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                    setForm((s) => ({ ...s, lowerTh: e.target.value }))
                   }
                 />
               </div>

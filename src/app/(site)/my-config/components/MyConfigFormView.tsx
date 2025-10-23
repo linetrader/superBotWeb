@@ -1,3 +1,4 @@
+// src/app/(site)/my-config/components/MyConfigFormView.tsx
 "use client";
 
 import {
@@ -23,6 +24,7 @@ export function MyConfigFormView({ vm }: Props) {
     selectedIds,
     handleSave,
     handleDeleteSelected,
+    handleUidChange, // ✅ 추가
     handleApiKeyChange,
     handleApiSecretChange,
   } = vm;
@@ -56,6 +58,15 @@ export function MyConfigFormView({ vm }: Props) {
           ))}
         </SelectField>
       </LabeledField>
+
+      {/* ✅ UID 입력란 (API Key 위에 위치) */}
+      <InputField
+        id="uid"
+        label="거래소 UID"
+        value={form.uid}
+        placeholder="거래소 계정 UID (필수)"
+        onChange={handleUidChange as React.ChangeEventHandler<HTMLInputElement>}
+      />
 
       <InputField
         id="apiKey"

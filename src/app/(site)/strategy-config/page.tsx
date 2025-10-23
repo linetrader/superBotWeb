@@ -1,7 +1,8 @@
+// src/app/(site)/strategy-config/page.tsx
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import { Section, Caption } from "@/components/ui";
+import { Section } from "@/components/ui";
 import type {
   StrategyItem,
   StrategyCreateBody,
@@ -108,8 +109,6 @@ export default function StrategyConfigsPage() {
 
   return (
     <Section className="mx-auto max-w-5xl p-4">
-      <Caption className="mb-3">Strategy Configs</Caption>
-
       <CreateStrategyFormView
         form={createHook.form}
         setForm={createHook.setForm}

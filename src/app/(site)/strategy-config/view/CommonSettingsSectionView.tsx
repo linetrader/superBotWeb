@@ -115,7 +115,7 @@ export default function CommonSettingsSectionView({
         {/* 목표 수익률 / 레버리지 */}
         <div className="form-control">
           <label className="label">
-            <span className="label-text">목표 수익률 / 레버리지</span>
+            <span className="label-text">목표 수익률 / 레버리지 (%)</span>
           </label>
           <div className="grid grid-cols-2 gap-2">
             <input
@@ -146,7 +146,7 @@ export default function CommonSettingsSectionView({
         {/* 기본 수량 / 최대 수량 */}
         <div className="form-control">
           <label className="label">
-            <span className="label-text">기본 수량 / 최대 수량</span>
+            <span className="label-text">기본 수량 / 최대 수량 (USDT)</span>
           </label>
           <div className="grid grid-cols-2 gap-2">
             <input

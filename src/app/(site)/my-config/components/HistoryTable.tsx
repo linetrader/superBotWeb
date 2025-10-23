@@ -1,3 +1,4 @@
+// src/app/(site)/my-config/components/HistoryTable.tsx
 "use client";
 
 import { Table } from "@/components/ui";
@@ -8,10 +9,18 @@ type Props = { vm: UseMyConfigReturn };
 export function HistoryTable({ vm }: Props) {
   const { history, selectedRowIndexes, onToggleRow, onToggleAll } = vm;
 
-  const head: [string, string, string] = ["수정시각", "거래소", "생성시각"];
-  const rows: [string, string, string][] = history.map((h) => [
+  // UID 컬럼 추가
+  const head: [string, string, string, string] = [
+    "수정시각",
+    "거래소",
+    "UID",
+    "생성시각",
+  ];
+
+  const rows: [string, string, string, string][] = history.map((h) => [
     new Date(h.updatedAt).toLocaleString(),
     `${h.exchangeName} (${h.exchangeCode})`,
+    h.uid ?? "-",
     new Date(h.createdAt).toLocaleString(),
   ]);
 
@@ -24,7 +33,7 @@ export function HistoryTable({ vm }: Props) {
         stickyHeader
         zebra
         dense
-        colAlign={["left", "left", "left"]}
+        colAlign={["left", "left", "left", "left"]}
         selectable
         selectedRowIndexes={selectedRowIndexes}
         onToggleRow={onToggleRow}

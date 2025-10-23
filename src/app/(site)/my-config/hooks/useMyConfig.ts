@@ -1,3 +1,4 @@
+// src/app/(site)/my-config/hooks/useMyConfig.ts
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -8,7 +9,7 @@ import {
   type ErrorResponse,
   type PostBody,
   assertHistoryList,
-} from "@/types/my-config";
+} from "../types/index";
 import {
   apiLoadHistory,
   apiSaveConfig,
@@ -34,6 +35,7 @@ export type UseMyConfigReturn = {
   loadHistory: () => Promise<void>;
   handleSave: () => Promise<void>;
   handleDeleteSelected: () => Promise<void>;
+  handleUidChange: (v: string | React.ChangeEvent<HTMLInputElement>) => void;
   handleApiKeyChange: (v: string | React.ChangeEvent<HTMLInputElement>) => void;
   handleApiSecretChange: (
     v: string | React.ChangeEvent<HTMLInputElement>
@@ -51,6 +53,7 @@ export function useMyConfig(): UseMyConfigReturn {
   const [form, setForm] = useState<MyConfigForm>({
     enabled: true,
     exchangeId: EXCHANGES[0]?.id ?? "",
+    uid: "",
     apiKey: "",
     apiSecret: "",
   });
@@ -71,6 +74,15 @@ export function useMyConfig(): UseMyConfigReturn {
     setErrorMsg("");
     try {
       const res = await apiLoadHistory();
+
+      // (선택) HTML 응답 방지용 가벼운 체크
+      const ct = res.headers.get("content-type") ?? "";
+      if (!ct.includes("application/json")) {
+        throw new Error(
+          `Unexpected content-type: ${ct} (status ${res.status})`
+        );
+      }
+
       const dataUnknown = (await res.json()) as unknown;
       assertHistoryList(dataUnknown);
       setHistory(dataUnknown);
@@ -104,9 +116,14 @@ export function useMyConfig(): UseMyConfigReturn {
       setErrorMsg("거래소를 선택하세요.");
       return;
     }
+    if (!form.uid.trim()) {
+      setErrorMsg("거래소 UID를 입력하세요.");
+      return;
+    }
 
     const payload: PostBody = {
       exchangeCode,
+      uid: form.uid,
       apiKey: form.apiKey,
       apiSecret: form.apiSecret,
     };
@@ -116,6 +133,14 @@ export function useMyConfig(): UseMyConfigReturn {
       const res = await apiSaveConfig(payload);
       if (res.ok) {
         await loadHistory();
+
+        // ✅ 저장 성공 시 3개 항목만 리셋 (UID, API Key, API Secret)
+        setForm((s) => ({
+          ...s,
+          uid: "",
+          apiKey: "",
+          apiSecret: "",
+        }));
       } else {
         let errText = `Save failed (${res.status})`;
         try {
@@ -129,7 +154,7 @@ export function useMyConfig(): UseMyConfigReturn {
     } finally {
       setSaving(false);
     }
-  }, [form.apiKey, form.apiSecret, form.exchangeId, loadHistory]);
+  }, [form.apiKey, form.apiSecret, form.exchangeId, form.uid, loadHistory]);
 
   const handleDeleteSelected = useCallback(async (): Promise<void> => {
     if (selectedIds.size === 0) return;
@@ -194,6 +219,13 @@ export function useMyConfig(): UseMyConfigReturn {
     else setSelectedIds(new Set());
   }
 
+  function handleUidChange(
+    v: string | React.ChangeEvent<HTMLInputElement>
+  ): void {
+    const value = pickValue(v);
+    setForm((s) => ({ ...s, uid: value }));
+  }
+
   function handleApiKeyChange(
     v: string | React.ChangeEvent<HTMLInputElement>
   ): void {
@@ -223,6 +255,7 @@ export function useMyConfig(): UseMyConfigReturn {
     loadHistory,
     handleSave,
     handleDeleteSelected,
+    handleUidChange,
     handleApiKeyChange,
     handleApiSecretChange,
     onToggleRow,
