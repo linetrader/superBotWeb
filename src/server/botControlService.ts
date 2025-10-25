@@ -3,19 +3,22 @@ import prisma from "@/lib/prisma";
 import { enqueueWorkItem } from "@/server/enqueueWorkItem";
 import { WorkType, BotStatus } from "@/generated/prisma";
 
-/** enqueueWorkItem()이 실제로 생성해서 돌려주는 작업 아이템 타입 */
-type EnqueueResult = Awaited<ReturnType<typeof enqueueWorkItem>>;
+export type ControlBotsParams = {
+  requesterId: string;
+  action: "START" | "STOP";
+  botIds: string[];
+};
 
-/** controlBots()에서 봇별 결과 shape */
-interface ControlBotResult {
+export type EnqueueResult = Awaited<ReturnType<typeof enqueueWorkItem>>;
+
+export interface ControlBotResult {
   botId: string;
   ok: boolean;
   reason?: string;
   workItem?: EnqueueResult;
 }
 
-/** controlBots() 전체 리턴 shape */
-interface ControlBotsReturn {
+export interface ControlBotsReturn {
   updated: number;
   requested: number;
   eligible: number;
@@ -27,14 +30,16 @@ function normalizeRuntimeStatus(s: string | null | undefined): BotStatus {
   return (s ?? "STOPPED") as BotStatus;
 }
 
-/** adminId 기준으로 모든 하위(레퍼럴 트리 전체)의 userId 수집 */
-async function collectAllDownlineIds(rootUserId: string): Promise<Set<string>> {
+/** adminId 기준 다운라인 전체(userId) 수집: referralEdge.parentId -> childId BFS */
+export async function collectAllDownlineIds(
+  rootUserId: string
+): Promise<Set<string>> {
   const visited = new Set<string>();
   let frontier: string[] = [rootUserId];
   const MAX_DEPTH = 20;
   const TAKE_PER_ROUND = 5000;
 
-  for (let depth = 0; depth < MAX_DEPTH && frontier.length > 0; depth++) {
+  for (let depth = 0; depth < MAX_DEPTH && frontier.length > 0; depth += 1) {
     const edges = await prisma.referralEdge.findMany({
       where: { parentId: { in: frontier } },
       select: { childId: true },
@@ -55,39 +60,48 @@ async function collectAllDownlineIds(rootUserId: string): Promise<Set<string>> {
   return visited;
 }
 
-export async function controlBots(params: {
-  requesterId: string;
-  action: "START" | "STOP";
-  botIds: string[];
-}): Promise<ControlBotsReturn> {
+/** UI 표시에 쓰는 mode 문자열 변환 */
+export function modeToString(mode: unknown): "SINGLE" | "MULTI" {
+  return mode === "MULTI" ? "MULTI" : "SINGLE";
+}
+
+/** 런타임 status -> {status, running} 정규화 */
+export function runtimeToFlags(rawStatus: string | null): {
+  status: "STOPPED" | "STARTING" | "RUNNING" | "STOPPING" | "ERROR";
+  running: boolean;
+} {
+  const s = (rawStatus ?? "STOPPED") as
+    | "STOPPED"
+    | "STARTING"
+    | "RUNNING"
+    | "STOPPING"
+    | "ERROR";
+  const running = s === "RUNNING" || s === "STARTING";
+  return { status: s, running };
+}
+
+export async function controlBots(
+  params: ControlBotsParams
+): Promise<ControlBotsReturn> {
   const { requesterId, action, botIds } = params;
 
-  // requesterId 기준으로 제어 가능한 userId = 본인 + 다운라인 전체
   const downlineSet = await collectAllDownlineIds(requesterId);
   const allowedUserIdsSet = new Set<string>([requesterId, ...downlineSet]);
 
-  // 대상 봇 정보 + 현재 runtime.status 조회
   const bots = await prisma.tradingBot.findMany({
     where: { id: { in: botIds } },
     select: {
       id: true,
       userId: true,
-      BotRuntime: {
-        select: {
-          status: true,
-        },
-      },
+      BotRuntime: { select: { status: true } },
     },
   });
 
-  // 권한 있는 봇만 추림
   const authorized = bots.filter((b) => allowedUserIdsSet.has(b.userId));
 
-  // 상태별 허용 조건
   const START_ALLOWED = new Set<BotStatus>(["STOPPED", "STOPPING", "ERROR"]);
   const STOP_ALLOWED = new Set<BotStatus>(["STARTING", "RUNNING", "ERROR"]);
 
-  // 상태적으로도 가능한 봇만 추림 (eligible)
   const eligibleBots = authorized.filter((b) => {
     const curStatus = normalizeRuntimeStatus(b.BotRuntime?.status);
     return action === "START"
@@ -98,13 +112,12 @@ export async function controlBots(params: {
   const results: ControlBotResult[] = [];
   let successCount = 0;
 
-  // eligible 한 애들만 실제 큐 enqueue 시도
   for (const b of eligibleBots) {
     const workType =
       action === "START" ? WorkType.START_BOT : WorkType.STOP_BOT;
     try {
       const workItem = await enqueueWorkItem({
-        userId: b.userId, // 실제 그 봇의 주인
+        userId: b.userId,
         botId: b.id,
         type: workType,
         payload: {
@@ -129,11 +142,9 @@ export async function controlBots(params: {
     }
   }
 
-  // authorized인데 eligible이 아니었던 애들도 결과에 추가
   for (const b of authorized) {
-    const isAlreadyIncluded = eligibleBots.find((eb) => eb.id === b.id);
-    if (isAlreadyIncluded) continue;
-
+    const already = eligibleBots.find((eb) => eb.id === b.id);
+    if (already) continue;
     results.push({
       botId: b.id,
       ok: false,
@@ -141,7 +152,6 @@ export async function controlBots(params: {
     });
   }
 
-  // 아예 권한조차 없는 / 존재하지 않는 bot들도 결과에 추가
   for (const requestedId of botIds) {
     const alreadyReported = results.find((r) => r.botId === requestedId);
     if (alreadyReported) continue;

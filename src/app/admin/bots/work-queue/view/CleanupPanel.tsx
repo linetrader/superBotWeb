@@ -2,23 +2,14 @@
 "use client";
 
 type CleanupPanelProps = {
-  baseDate: string;
   keepDays: string;
-  setBaseDate: (v: string) => void;
   setKeepDays: (v: string) => void;
   cleanupLoading: boolean;
   runCleanup: () => void;
 };
 
 export function CleanupPanel(props: CleanupPanelProps) {
-  const {
-    baseDate,
-    keepDays,
-    setBaseDate,
-    setKeepDays,
-    cleanupLoading,
-    runCleanup,
-  } = props;
+  const { keepDays, setKeepDays, cleanupLoading, runCleanup } = props;
 
   return (
     <div className="card bg-base-100 shadow border">
@@ -26,27 +17,12 @@ export function CleanupPanel(props: CleanupPanelProps) {
         <h2 className="card-title text-base">SUCCEEDED 정리</h2>
 
         <div className="text-xs text-base-content/60">
-          기준일과 보관일수를 지정하면,
-          <br />
-          기준일에서 보관일수를 뺀 시각보다 오래된{" "}
-          <span className="font-semibold">SUCCEEDED</span> 작업만 삭제합니다.
+          오늘 시점 기준으로, 지정한 일수보다 오래된{" "}
+          <span className="font-semibold">SUCCEEDED</span> 작업(생성 기준)을
+          일괄 삭제합니다.
         </div>
 
         <div className="flex flex-col md:flex-row gap-4 md:items-end">
-          <label className="form-control w-full md:w-auto">
-            <div className="label">
-              <span className="label-text text-xs font-semibold">
-                기준일 (UTC 기준)
-              </span>
-            </div>
-            <input
-              type="date"
-              className="input input-bordered input-sm w-full md:w-40"
-              value={baseDate}
-              onChange={(e) => setBaseDate(e.target.value)}
-            />
-          </label>
-
           <label className="form-control w-full md:w-auto">
             <div className="label">
               <span className="label-text text-xs font-semibold">

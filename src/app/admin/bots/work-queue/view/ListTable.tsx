@@ -16,7 +16,6 @@ type ListTableProps = {
 
 function formatDate(s: string | null): string {
   if (!s) return "-";
-  // 가볍게 보기 좋게만
   return s.replace("T", " ").replace("Z", "");
 }
 

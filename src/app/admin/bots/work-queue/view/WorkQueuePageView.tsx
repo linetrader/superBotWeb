@@ -20,11 +20,14 @@ type WorkQueuePageViewProps = {
 
   refresh: () => void;
 
-  baseDate: string;
-  keepDays: string;
-  setBaseDate: (v: string) => void;
-  setKeepDays: (v: string) => void;
+  // 유저 검색
+  usernameInput: string;
+  setUsernameInput: (v: string) => void;
+  applyUsernameFilter: () => void;
 
+  // cleanup
+  keepDays: string;
+  setKeepDays: (v: string) => void;
   cleanupLoading: boolean;
   runCleanup: () => void;
 };
@@ -41,9 +44,10 @@ export function WorkQueuePageView(props: WorkQueuePageViewProps) {
     statusFilter,
     setStatusFilter,
     refresh,
-    baseDate,
+    usernameInput,
+    setUsernameInput,
+    applyUsernameFilter,
     keepDays,
-    setBaseDate,
     setKeepDays,
     cleanupLoading,
     runCleanup,
@@ -60,6 +64,7 @@ export function WorkQueuePageView(props: WorkQueuePageViewProps) {
         </div>
 
         <div className="flex flex-col md:flex-row md:items-end gap-4">
+          {/* 상태 필터 */}
           <label className="form-control w-full md:w-auto">
             <div className="label">
               <span className="label-text text-xs font-semibold">
@@ -80,21 +85,46 @@ export function WorkQueuePageView(props: WorkQueuePageViewProps) {
             </select>
           </label>
 
+          {/* 유저 검색 */}
+          <div className="flex flex-col md:flex-row md:items-end gap-2">
+            <label className="form-control w-full md:w-auto">
+              <div className="label">
+                <span className="label-text text-xs font-semibold">
+                  유저 검색 (username)
+                </span>
+              </div>
+              <input
+                type="text"
+                className="input input-bordered input-sm w-full md:w-40"
+                placeholder="부분검색"
+                value={usernameInput}
+                onChange={(e) => setUsernameInput(e.target.value)}
+              />
+            </label>
+
+            <button
+              type="button"
+              className="btn btn-sm"
+              onClick={applyUsernameFilter}
+            >
+              검색
+            </button>
+          </div>
+
+          {/* 수동 새로고침 */}
           <button
             type="button"
             className={`btn btn-sm ${loading ? "btn-disabled loading" : ""}`}
             disabled={loading}
             onClick={refresh}
           >
-            {loading ? "갱신 중..." : "필터 적용"}
+            {loading ? "갱신 중..." : "새로고침"}
           </button>
         </div>
       </header>
 
       <CleanupPanel
-        baseDate={baseDate}
         keepDays={keepDays}
-        setBaseDate={setBaseDate}
         setKeepDays={setKeepDays}
         cleanupLoading={cleanupLoading}
         runCleanup={runCleanup}

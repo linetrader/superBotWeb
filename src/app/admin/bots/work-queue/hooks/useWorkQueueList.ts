@@ -10,14 +10,6 @@ import {
 import { parseListResponse, parseCleanupResponse } from "../gaurd/workItems";
 import { useToast } from "@/components/ui";
 
-function getTodayYMD(): string {
-  const d = new Date();
-  const yyyy = d.getUTCFullYear();
-  const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
-  const dd = String(d.getUTCDate()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
-}
-
 export function useWorkQueueList(): UseWorkQueueListReturn {
   const { toast } = useToast();
 
@@ -32,8 +24,11 @@ export function useWorkQueueList(): UseWorkQueueListReturn {
 
   const [statusFilter, setStatusFilterState] = useState<StatusFilter>("ALL");
 
+  // 유저 검색: 인풋값과 실제 적용된 필터를 분리
+  const [usernameInput, setUsernameInputState] = useState<string>("");
+  const [usernameFilter, setUsernameFilterState] = useState<string>("");
+
   // cleanup 폼 상태
-  const [baseDate, setBaseDate] = useState<string>(getTodayYMD());
   const [keepDays, setKeepDays] = useState<string>("30");
   const [cleanupLoading, setCleanupLoading] = useState<boolean>(false);
 
@@ -48,6 +43,9 @@ export function useWorkQueueList(): UseWorkQueueListReturn {
       params.set("pageSize", String(pageSize));
       if (statusFilter !== "ALL") {
         params.set("status", statusFilter);
+      }
+      if (usernameFilter.trim() !== "") {
+        params.set("username", usernameFilter.trim());
       }
 
       const res = await fetch(
@@ -81,8 +79,9 @@ export function useWorkQueueList(): UseWorkQueueListReturn {
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize, statusFilter, toast]);
+  }, [page, pageSize, statusFilter, usernameFilter, toast]);
 
+  // page / statusFilter / usernameFilter 가 바뀔 때 목록 호출
   useEffect(() => {
     fetchList();
   }, [fetchList]);
@@ -97,19 +96,25 @@ export function useWorkQueueList(): UseWorkQueueListReturn {
     setPage(1);
   }, []);
 
+  // username 인풋만 업데이트 (검색버튼 누르기 전까지 fetch 안 함)
+  const setUsernameInput = useCallback((v: string) => {
+    setUsernameInputState(v);
+  }, []);
+
+  // 검색 버튼 클릭 시 실제 필터 반영 + page=1
+  const applyUsernameFilter = useCallback(() => {
+    setUsernameFilterState(usernameInput.trim());
+    setPage(1);
+  }, [usernameInput]);
+
   // cleanup 실행
   const runCleanup = useCallback(async () => {
     const keepDaysNum = parseInt(keepDays, 10);
 
-    if (
-      !baseDate ||
-      !/^\d{4}-\d{2}-\d{2}$/.test(baseDate) ||
-      Number.isNaN(keepDaysNum) ||
-      keepDaysNum < 0
-    ) {
+    if (Number.isNaN(keepDaysNum) || keepDaysNum < 0) {
       toast({
         title: "입력값 오류",
-        description: "기준일 또는 보관일수를 확인하세요.",
+        description: "보관일수(일)를 확인하세요.",
         variant: "error",
       });
       return;
@@ -121,7 +126,6 @@ export function useWorkQueueList(): UseWorkQueueListReturn {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          baseDate,
           keepDays: keepDaysNum,
         }),
       });
@@ -152,7 +156,7 @@ export function useWorkQueueList(): UseWorkQueueListReturn {
     } finally {
       setCleanupLoading(false);
     }
-  }, [baseDate, keepDays, fetchList, toast]);
+  }, [keepDays, fetchList, toast]);
 
   const value: UseWorkQueueListReturn = useMemo(
     () => ({
@@ -166,9 +170,10 @@ export function useWorkQueueList(): UseWorkQueueListReturn {
       setStatusFilter,
       setPage,
       refresh,
-      baseDate,
+      usernameInput,
+      setUsernameInput,
+      applyUsernameFilter,
       keepDays,
-      setBaseDate,
       setKeepDays,
       cleanupLoading,
       runCleanup,
@@ -184,9 +189,10 @@ export function useWorkQueueList(): UseWorkQueueListReturn {
       setStatusFilter,
       setPage,
       refresh,
-      baseDate,
+      usernameInput,
+      setUsernameInput,
+      applyUsernameFilter,
       keepDays,
-      setBaseDate,
       setKeepDays,
       cleanupLoading,
       runCleanup,

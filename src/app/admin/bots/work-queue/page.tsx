@@ -19,9 +19,10 @@ export default function WorkQueueListPage() {
       statusFilter={data.statusFilter}
       setStatusFilter={data.setStatusFilter}
       refresh={data.refresh}
-      baseDate={data.baseDate}
+      usernameInput={data.usernameInput}
+      setUsernameInput={data.setUsernameInput}
+      applyUsernameFilter={data.applyUsernameFilter}
       keepDays={data.keepDays}
-      setBaseDate={data.setBaseDate}
       setKeepDays={data.setKeepDays}
       cleanupLoading={data.cleanupLoading}
       runCleanup={data.runCleanup}

@@ -1,5 +1,4 @@
 // src/app/admin/bots/list/types/index.ts
-
 export type BotModeStr = "SINGLE" | "MULTI";
 
 export type RuntimeStatus =
@@ -12,7 +11,7 @@ export type RuntimeStatus =
 export type BotRow = {
   id: string;
   userId: string;
-  username: string; // 표시용 사용자명
+  username: string;
   name: string;
   mode: BotModeStr;
 
@@ -43,8 +42,7 @@ export type BulkUpdateOk = { ok: true; data: { updated: number } };
 export type BulkUpdateErr = { ok: false; error: string };
 export type BulkUpdateResponse = BulkUpdateOk | BulkUpdateErr;
 
-// 러닝상태 필터 UI에서 쓰는 값
-export type RunningFilter = "ALL" | "RUNNING" | "STOPPED";
+export type RunningFilter = "ALL" | "RUNNING" | "STOPPED" | "ERROR";
 
 export type UseBotsListReturn = {
   loading: boolean;
@@ -73,4 +71,11 @@ export type UseBotsListReturn = {
   // 러닝상태 필터
   runningFilter: RunningFilter;
   setRunningFilter: (f: RunningFilter) => void;
+
+  // 유저네임 검색 UI 제어용
+  usernameInput: string;
+  setUsernameInput: (v: string) => void;
+
+  // 실제 필터 적용 트리거 (검색 버튼)
+  applyUsernameFilter: () => void;
 };

@@ -2,13 +2,15 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import type { UseBotsListReturn, BotRow } from "../types";
+import type { UseBotsListReturn, BotRow, RunningFilter } from "../types";
 
 function ModeBadge(props: { mode: "SINGLE" | "MULTI" }) {
   const { mode } = props;
   return (
     <div
-      className={`badge ${mode === "SINGLE" ? "badge-info" : "badge-secondary"}`}
+      className={`badge ${
+        mode === "SINGLE" ? "badge-info" : "badge-secondary"
+      }`}
     >
       {mode}
     </div>
@@ -34,8 +36,12 @@ function HeaderControls(props: {
   onStop: () => void;
   starting: boolean;
   stopping: boolean;
-  runningFilter: "ALL" | "RUNNING" | "STOPPED";
-  setRunningFilter: (f: "ALL" | "RUNNING" | "STOPPED") => void;
+  runningFilter: RunningFilter;
+  setRunningFilter: (f: RunningFilter) => void;
+
+  usernameInput: string;
+  setUsernameInput: (v: string) => void;
+  applyUsernameFilter: () => void;
 }) {
   const {
     allChecked,
@@ -47,11 +53,15 @@ function HeaderControls(props: {
     stopping,
     runningFilter,
     setRunningFilter,
+    usernameInput,
+    setUsernameInput,
+    applyUsernameFilter,
   } = props;
 
   return (
     <div className="flex flex-wrap items-start justify-between gap-4">
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
+        {/* 전체 선택 */}
         <label className="label cursor-pointer">
           <span className="label-text mr-2">전체 선택</span>
           <input
@@ -62,21 +72,39 @@ function HeaderControls(props: {
           />
         </label>
 
+        {/* 러닝상태 필터 */}
         <div className="flex items-center gap-2">
           <span className="text-sm">러닝상태</span>
           <select
             className="select select-bordered select-sm"
             value={runningFilter}
             onChange={(e) =>
-              setRunningFilter(
-                e.currentTarget.value as "ALL" | "RUNNING" | "STOPPED"
-              )
+              setRunningFilter(e.currentTarget.value as RunningFilter)
             }
           >
             <option value="ALL">ALL</option>
             <option value="RUNNING">RUNNING</option>
             <option value="STOPPED">STOPPED</option>
+            <option value="ERROR">ERROR</option>
           </select>
+        </div>
+
+        {/* 유저네임 검색 */}
+        <div className="flex items-center gap-2">
+          <span className="text-sm">유저 검색</span>
+          <input
+            type="text"
+            className="input input-bordered input-sm"
+            placeholder="username 부분검색"
+            value={usernameInput}
+            onChange={(e) => {
+              // 타이핑 상태만 업데이트. 아직 fetch 안 함.
+              setUsernameInput(e.currentTarget.value);
+            }}
+          />
+          <button className="btn btn-sm" onClick={applyUsernameFilter}>
+            검색
+          </button>
         </div>
 
         <button className="btn btn-sm" onClick={onRefresh}>
@@ -146,7 +174,9 @@ function BotsTable(props: {
                     type="checkbox"
                     className="checkbox"
                     checked={checked}
-                    onChange={() => {} /* handled above */}
+                    onChange={() => {
+                      /* 위의 onClick에서 처리 */
+                    }}
                   />
                 </td>
                 <td className="text-xs text-gray-400">{r.workerId ?? "-"}</td>
@@ -223,6 +253,9 @@ export default function ListView(props: UseBotsListReturn) {
     setPage,
     runningFilter,
     setRunningFilter,
+    usernameInput,
+    setUsernameInput,
+    applyUsernameFilter,
   } = props;
 
   const router = useRouter();
@@ -243,6 +276,9 @@ export default function ListView(props: UseBotsListReturn) {
         stopping={stopping}
         runningFilter={runningFilter}
         setRunningFilter={setRunningFilter}
+        usernameInput={usernameInput}
+        setUsernameInput={setUsernameInput}
+        applyUsernameFilter={applyUsernameFilter}
       />
 
       {error && (

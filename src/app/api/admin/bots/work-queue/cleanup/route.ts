@@ -33,16 +33,8 @@ async function collectAllDownlineIds(rootUserId: string): Promise<Set<string>> {
 }
 
 type CleanupBody = {
-  baseDate: string; // "YYYY-MM-DD"
-  keepDays: number; // e.g. 30
+  keepDays: number; // 예: 30
 };
-
-function isValidDateYMD(v: string): boolean {
-  // YYYY-MM-DD 간단 검사
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return false;
-  const d = new Date(`${v}T00:00:00.000Z`);
-  return !Number.isNaN(d.getTime());
-}
 
 export async function POST(req: NextRequest) {
   const adminId = await getUserId();
@@ -63,14 +55,8 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { baseDate, keepDays } = body;
+  const { keepDays } = body;
 
-  if (typeof baseDate !== "string" || !isValidDateYMD(baseDate)) {
-    return NextResponse.json(
-      { ok: false, error: "INVALID_BASE_DATE" },
-      { status: 400 }
-    );
-  }
   if (
     typeof keepDays !== "number" ||
     !Number.isFinite(keepDays) ||
@@ -82,22 +68,21 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // 기준일(UTC 자정)에서 keepDays일 전으로 cutoff 계산
-  const baseDateObj = new Date(`${baseDate}T00:00:00.000Z`);
-  const cutoffMs = baseDateObj.getTime() - keepDays * 24 * 60 * 60 * 1000;
+  // 현재 시각(now) 기준으로 keepDays 일수 이전 cutoff
+  const now = new Date();
+  const cutoffMs = now.getTime() - keepDays * 24 * 60 * 60 * 1000;
   const cutoffDate = new Date(cutoffMs);
 
   // admin과 그 하위 유저
   const downlineSet = await collectAllDownlineIds(adminId);
-  const allowedUserIds = new Set<string>([adminId, ...downlineSet]);
+  const allowedUserIds = [adminId, ...downlineSet];
 
-  // SUCCEEDED && updatedAt < cutoff && userId in allowedUserIds
-  // deleteMany 리턴은 { count: number }
+  // SUCCEEDED && createdAt < cutoff && userId in allowedUserIds
   const result = await prisma.workItem.deleteMany({
     where: {
-      userId: { in: Array.from(allowedUserIds) },
+      userId: { in: allowedUserIds },
       status: "SUCCEEDED",
-      updatedAt: { lt: cutoffDate },
+      createdAt: { lt: cutoffDate },
     },
   });
 

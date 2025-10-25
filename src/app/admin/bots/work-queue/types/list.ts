@@ -1,6 +1,4 @@
 // src/app/admin/bots/work-queue/types/list.ts
-
-// 상태 필터 값 ("ALL" 포함)
 export type StatusFilter =
   | "ALL"
   | "QUEUED"
@@ -78,14 +76,22 @@ export type UseWorkQueueListReturn = {
   statusFilter: StatusFilter;
   setStatusFilter: (s: StatusFilter) => void;
 
+  // 페이지 이동
   setPage: (next: number) => void;
+
+  // 목록 수동 새로고침
   refresh: () => void;
 
-  baseDate: string;
-  keepDays: string;
-  setBaseDate: (v: string) => void;
-  setKeepDays: (v: string) => void;
+  // 유저 검색 UI 제어용
+  usernameInput: string;
+  setUsernameInput: (v: string) => void;
 
+  // "검색" 버튼 눌렀을 때 실제 필터 적용
+  applyUsernameFilter: () => void;
+
+  // cleanup 관련
+  keepDays: string;
+  setKeepDays: (v: string) => void;
   cleanupLoading: boolean;
   runCleanup: () => void;
 };
