@@ -47,5 +47,8 @@ model WorkAttempt {
   error         String?   @db.Text
   logsRef       String?
 
+  // 추가: 이 Attempt가 시작될 때까지 WorkItem이 얼마나 기다렸는지(초 단위)
+  queueDelaySec Float?
+
   @@index([workItemId, startedAt])
 }

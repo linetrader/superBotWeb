@@ -18,50 +18,115 @@ function formatDate(iso: string): string {
   }
 }
 
+// ✅ UsersTable: 페이지네이션 UI/로직 추가
 function UsersTable(props: {
   rows: UserRow[];
   onDetail: (userId: string) => void;
+  page: number;
+  pageSize: number;
+  total: number;
+  setPage: (p: number) => void;
 }) {
-  const { rows, onDetail } = props;
+  const { rows, onDetail, page, pageSize, total, setPage } = props;
+
+  // 총 페이지 수
+  const totalPagesRaw = total / pageSize;
+  const totalPages =
+    Number.isFinite(totalPagesRaw) && totalPagesRaw > 0
+      ? Math.ceil(totalPagesRaw)
+      : 1;
+
+  const isFirstPage = page <= 1;
+  const isLastPage = page >= totalPages;
+
+  const goPrev = () => {
+    if (!isFirstPage) {
+      setPage(page - 1);
+    }
+  };
+
+  const goNext = () => {
+    if (!isLastPage) {
+      setPage(page + 1);
+    }
+  };
+
+  // 현재 페이지의 시작~끝 index (사람이 보는 번호용)
+  // 예: page=2, pageSize=20 → startIdx=21, endIdx=40 (단 total 넘어가면 total로 보정)
+  const startIdx = (page - 1) * pageSize + 1;
+  const endIdxRaw = page * pageSize;
+  const endIdx = endIdxRaw > total ? total : endIdxRaw;
+
   return (
-    <div className="overflow-x-auto">
-      <table className="table table-zebra w-full">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>username</th>
-            <th>email</th>
-            <th>name</th>
-            <th>country</th>
-            <th>created</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((u, idx) => (
-            <tr key={u.id}>
-              <td>{idx + 1}</td>
-              <td>{u.username}</td>
-              <td>{u.email}</td>
-              <td>{u.name}</td>
-              <td>{u.countryCode ?? "-"}</td>
-              <td>{formatDate(u.createdAt)}</td>
-              <td>
-                <button className="btn btn-sm" onClick={() => onDetail(u.id)}>
-                  상세보기
-                </button>
-              </td>
-            </tr>
-          ))}
-          {rows.length === 0 && (
+    <div className="space-y-4">
+      <div className="overflow-x-auto">
+        <table className="table table-zebra w-full">
+          <thead>
             <tr>
-              <td colSpan={7} className="text-center">
-                데이터가 없습니다.
-              </td>
+              <th>#</th>
+              <th>username</th>
+              <th>email</th>
+              <th>name</th>
+              <th>country</th>
+              <th>created</th>
+              <th></th>
             </tr>
-          )}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {rows.map((u, idx) => (
+              <tr key={u.id}>
+                <td>{(page - 1) * pageSize + idx + 1}</td>
+                <td>{u.username}</td>
+                <td>{u.email}</td>
+                <td>{u.name}</td>
+                <td>{u.countryCode ?? "-"}</td>
+                <td>{formatDate(u.createdAt)}</td>
+                <td>
+                  <button className="btn btn-sm" onClick={() => onDetail(u.id)}>
+                    상세보기
+                  </button>
+                </td>
+              </tr>
+            ))}
+            {rows.length === 0 && (
+              <tr>
+                <td colSpan={7} className="text-center">
+                  데이터가 없습니다.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* ✅ 페이지네이션 바 */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="text-sm text-base-content/70">
+          총 {total}명 · {startIdx}~{endIdx} 표시중 (페이지 {page}/{totalPages})
+        </div>
+
+        <div className="join">
+          <button
+            className={`join-item btn btn-sm ${isFirstPage ? "btn-disabled" : ""}`}
+            disabled={isFirstPage}
+            onClick={goPrev}
+          >
+            이전
+          </button>
+
+          <button className="join-item btn btn-sm btn-ghost no-animation cursor-default">
+            {page} / {totalPages}
+          </button>
+
+          <button
+            className={`join-item btn btn-sm ${isLastPage ? "btn-disabled" : ""}`}
+            disabled={isLastPage}
+            onClick={goNext}
+          >
+            다음
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -129,11 +194,15 @@ function DetailPanel(props: {
                                 value={editLevel ?? ""}
                                 onChange={(e) => {
                                   const v = Number(e.target.value);
-                                  if (Number.isFinite(v)) setEditLevel(v);
+                                  if (Number.isFinite(v)) {
+                                    setEditLevel(v);
+                                  }
                                 }}
                               />
                               <button
-                                className={`btn btn-sm ${savingLevel ? "btn-disabled" : "btn-primary"}`}
+                                className={`btn btn-sm ${
+                                  savingLevel ? "btn-disabled" : "btn-primary"
+                                }`}
                                 onClick={onSaveLevel}
                                 disabled={
                                   savingLevel || !editLevel || editLevel < 1
@@ -183,6 +252,7 @@ function DetailPanel(props: {
   );
 }
 
+// ✅ ListView에서 UsersTable로 page 관련 prop 전달
 export default function ListView(props: UseUsersListReturn) {
   const {
     loading,
@@ -198,6 +268,10 @@ export default function ListView(props: UseUsersListReturn) {
     setEditLevel,
     savingLevel,
     saveLevel,
+    page,
+    pageSize,
+    total,
+    setPage,
   } = props;
 
   return (
@@ -221,7 +295,14 @@ export default function ListView(props: UseUsersListReturn) {
           <span>불러오는 중…</span>
         </div>
       ) : (
-        <UsersTable rows={users} onDetail={openDetail} />
+        <UsersTable
+          rows={users}
+          onDetail={openDetail}
+          page={page}
+          pageSize={pageSize}
+          total={total}
+          setPage={setPage}
+        />
       )}
 
       <DetailPanel

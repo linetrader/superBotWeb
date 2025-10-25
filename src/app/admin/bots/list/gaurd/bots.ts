@@ -23,8 +23,11 @@ export const BotRowSchema = z.object({
   username: z.string().min(1),
   name: z.string().min(1),
   mode: z.union([z.literal("SINGLE"), z.literal("MULTI")]),
+
   status: RuntimeStatusSchema,
   running: z.boolean(),
+
+  workerId: z.string().min(1).nullable(), // null 허용
 });
 
 export const ListOkSchema = z.object({

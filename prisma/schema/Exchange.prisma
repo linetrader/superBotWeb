@@ -1,3 +1,4 @@
+// prisma/schema/Exchange.prisma
 model Exchange {
   id     String  @id @default(cuid())
   code   String  @unique @db.VarChar(20)  // 예: "GATEIO", "WEBSEA"

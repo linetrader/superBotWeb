@@ -1,3 +1,4 @@
+// prisma/schema/BotRuntime.prisma
 model BotRuntime {
   id String @id @default(cuid())
 
@@ -11,17 +12,41 @@ model BotRuntime {
   stoppedAt     DateTime?
   lastHeartbeat DateTime?
 
-  lastError String? @db.Text
+  // ---- 추가 계측 필드 ----
+  lastTickAt    DateTime? // 마지막 실제 틱(전략 실행) 완료 시각
+  userTickSec   Int?
+  tickDriftSec  Float?
+  lastError     String?   @db.Text
 
-  workerTaskArn   String?    // 현재 실행중인 태스크 ARN
-  workerRevision  String?    // 컨테이너 이미지 리비전/태그
-  desiredState    BotStatus? // UI가 원하는 상태(START/STOP). 스캐너가 이 값과 enabled 동기화할 때 유용
+  workerTaskArn  String?
+  workerRevision String?
+  desiredState   BotStatus?
+
+  // ✅ WorkerProcess FK
+  workerId String?
+  worker   WorkerProcess? @relation(name: "WorkerProcess_BotRuntimes", fields: [workerId], references: [id], onDelete: SetNull, onUpdate: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@unique([botId], map: "uniq_runtime_per_bot")
   @@index([status, updatedAt])
-  @@index([lastHeartbeat])       // 죽은 봇 정리/알림 배치 최적화
-  @@index([queueJobId])          // 조합 조회가 잦다면
+  @@index([lastHeartbeat])
+  @@index([queueJobId])
+  @@index([tickDriftSec], map: "idx_runtime_drift")
+  @@index([workerId])
+}
+
+model WorkerProcess {
+  id            String   @id        // WorkerManager runtime uuid
+  taskArn       String?
+  revision      String?
+  createdAt     DateTime @default(now())
+  lastHeartbeat DateTime?
+  updatedAt     DateTime @updatedAt
+
+  botRuntimes BotRuntime[] @relation(name: "WorkerProcess_BotRuntimes")
+
+  @@index([taskArn])
+  @@index([updatedAt])
 }

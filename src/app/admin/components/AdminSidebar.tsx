@@ -16,103 +16,46 @@ type NavNode = {
 
 const navTree: NavNode[] = [
   { label: "대시보드", href: "/admin" },
+
   {
     label: "유저 관리",
     children: [
       { label: "유저 목록", href: "/admin/users/list" },
       { label: "유저 트리", href: "/admin/users/tree" },
-    ],
-  },
-  {
-    label: "봇 관리",
-    children: [
-      { label: "봇 목록", href: "/admin/bots/list" },
-      { label: "전략 설정", href: "/admin/bots/strategy" },
-    ],
-  },
-  {
-    label: "거래소 관리",
-    children: [
-      { label: "거래소 목록", href: "/admin/exchanges/list" },
-      { label: "마켓 관리", href: "/admin/exchanges/market" },
-      { label: "거래소 API 관리", href: "/admin/exchanges/credential" },
+      // (옵션) 유저 상세는 사이드바에 안 넣고 /admin/users/[id]
     ],
   },
 
-  // {
-  //   label: "지갑 관리",
-  //   children: [
-  //     { label: "지갑 현황", href: "/admin/wallets" },
-  //     { label: "회사 지갑 현황", href: "/admin/wallets/admin-wallet" },
-  //     { label: "스케줄러 제어", href: "/admin/wallets/worker" },
-  //   ],
-  // },
-  // {
-  //   label: "패키지 관리",
-  //   children: [
-  //     { label: "패키지 목록", href: "/admin/packages" },
-  //     { label: "패키지 유저 목록", href: "/admin/packages/user" },
-  //     { label: "패키지 구매 내역", href: "/admin/packages/history" },
-  //   ],
-  // },
-  // {
-  //   label: "Level 정책",
-  //   children: [
-  //     { label: "정책 목록", href: "/admin/level/policies" },
-  //     { label: "스케줄러 제어", href: "/admin/level/worker" },
-  //   ],
-  // },
-  // {
-  //   label: "Center 정책",
-  //   children: [
-  //     { label: "정책 목록", href: "/admin/centers" },
-  //     // { label: "스케줄러 제어", href: "/admin/Centers/worker" },
-  //   ],
-  // },
-  // {
-  //   label: "마이닝",
-  //   children: [
-  //     { label: "정책 목록", href: "/admin/mining/policies" },
-  //     { label: "DFT 지급 내역", href: "/admin/mining/dftPayouts" },
-  //     // { label: "MLM 추천 플랜", href: "/admin/mining/mlm-plans" },
-  //     // { label: "MLM 플랜 레벨", href: "/admin/mining/mlm-plan-levels" },
-  //     // { label: "레벨 보너스 플랜", href: "/admin/mining/level-bonus-plans" },
-  //     // { label: "보너스 플랜 항목", href: "/admin/mining/level-bonus-items" },
-  //     // { label: "실행 로그", href: "/admin/mining/runs" },
-  //     // { label: "분배 내역", href: "/admin/mining/payouts" },
-  //     { label: "스케줄러 제어", href: "/admin/mining/scheduler" },
-  //   ],
-  // },
-  // {
-  //   label: "추천/MLM",
-  //   children: [
-  //     { label: "추천 트리(엣지)", href: "/admin/referral/edges" },
-  //     { label: "그룹 요약", href: "/admin/referral/group-summary" },
-  //     { label: "유저별 통계", href: "/admin/referral/stats" },
-  //     { label: "추천 플랜", href: "/admin/referral/plans" },
-  //     { label: "추천 플랜 레벨", href: "/admin/referral/plan-levels" },
-  //     { label: "커미션 현황", href: "/admin/referral/commissions" },
-  //     { label: "보상 요약", href: "/admin/users-reward-summary" },
-  //     { label: "보상 내역", href: "/admin/users-rewards" },
-  //     { label: "커미션 내역", href: "/admin/users-commissions" },
-  //   ],
-  // },
-  // {
-  //   label: "토큰/거래",
-  //   children: [
-  //     { label: "토큰 목록", href: "/admin/tokens" },
-  //     { label: "코인 가격", href: "/admin/coin-prices" },
-  //     { label: "지갑 트랜잭션", href: "/admin/wallet-txs" },
-  //   ],
-  // },
-  // {
-  //   label: "리포트/설정",
-  //   children: [
-  //     { label: "대시보드 리포트", href: "/admin/reports" },
-  //     { label: "국가 관리", href: "/admin/settings/countries" },
-  //     { label: "시스템 설정", href: "/admin/settings" },
-  //   ],
-  // },
+  {
+    label: "봇 관리",
+    children: [
+      // 2번, 3번 요구
+      { label: "봇 / 런타임", href: "/admin/bots/list" }, // TradingBot + BotRuntime
+      { label: "작업 큐", href: "/admin/bots/work-queue" }, // WorkItem / WorkAttempt
+      // 4번 요구
+      { label: "전략 설정", href: "/admin/bots/strategy" }, // StrategyConfig
+      { label: "글로벌 파라미터", href: "/admin/bots/global" }, // StrategyGlobalSettings + History
+    ],
+  },
+
+  {
+    label: "거래소 관리",
+    children: [
+      // 5번 요구
+      { label: "거래소 목록", href: "/admin/exchanges/list" }, // Exchange
+      { label: "마켓 관리", href: "/admin/exchanges/market" }, // ExchangeMarket
+      { label: "API 키 / 크리덴셜", href: "/admin/exchanges/credential" }, // ExchangeCredential
+    ],
+  },
+
+  {
+    label: "시스템",
+    children: [
+      // 6번 요구
+      { label: "감사 로그", href: "/admin/system/audit" }, // ApiAuditLog
+      { label: "알림 로그", href: "/admin/system/notify" }, // Notification
+    ],
+  },
 ];
 
 /* ---------------------- 유틸 ---------------------- */

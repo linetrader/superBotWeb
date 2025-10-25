@@ -1,5 +1,7 @@
 // src/app/admin/bots/list/types/index.ts
+
 export type BotModeStr = "SINGLE" | "MULTI";
+
 export type RuntimeStatus =
   | "STOPPED"
   | "STARTING"
@@ -13,8 +15,11 @@ export type BotRow = {
   username: string; // 표시용 사용자명
   name: string;
   mode: BotModeStr;
-  status: RuntimeStatus; // BotRuntime.status (없으면 STOPPED로 취급)
-  running: boolean; // status가 STARTING/RUNNING이면 true
+
+  status: RuntimeStatus;
+  running: boolean;
+
+  workerId: string | null;
 };
 
 export type ListOk = {
@@ -31,12 +36,15 @@ export type BulkAction = "START" | "STOP";
 
 export type BulkUpdatePayload = {
   action: BulkAction;
-  botIds: string[]; // length >= 1
+  botIds: string[];
 };
 
 export type BulkUpdateOk = { ok: true; data: { updated: number } };
 export type BulkUpdateErr = { ok: false; error: string };
 export type BulkUpdateResponse = BulkUpdateOk | BulkUpdateErr;
+
+// 러닝상태 필터 UI에서 쓰는 값
+export type RunningFilter = "ALL" | "RUNNING" | "STOPPED";
 
 export type UseBotsListReturn = {
   loading: boolean;
@@ -61,4 +69,8 @@ export type UseBotsListReturn = {
   pageSize: number;
   total: number;
   setPage: (p: number) => void;
+
+  // 러닝상태 필터
+  runningFilter: RunningFilter;
+  setRunningFilter: (f: RunningFilter) => void;
 };

@@ -1,6 +1,7 @@
 // src/app/admin/bots/list/view/ListView.tsx
 "use client";
 
+import { useRouter } from "next/navigation";
 import type { UseBotsListReturn, BotRow } from "../types";
 
 function ModeBadge(props: { mode: "SINGLE" | "MULTI" }) {
@@ -33,6 +34,8 @@ function HeaderControls(props: {
   onStop: () => void;
   starting: boolean;
   stopping: boolean;
+  runningFilter: "ALL" | "RUNNING" | "STOPPED";
+  setRunningFilter: (f: "ALL" | "RUNNING" | "STOPPED") => void;
 }) {
   const {
     allChecked,
@@ -42,9 +45,12 @@ function HeaderControls(props: {
     onStop,
     starting,
     stopping,
+    runningFilter,
+    setRunningFilter,
   } = props;
+
   return (
-    <div className="flex items-center justify-between">
+    <div className="flex flex-wrap items-start justify-between gap-4">
       <div className="flex items-center gap-3">
         <label className="label cursor-pointer">
           <span className="label-text mr-2">전체 선택</span>
@@ -55,20 +61,39 @@ function HeaderControls(props: {
             onChange={(e) => onToggleAll(e.currentTarget.checked)}
           />
         </label>
-        <button className="btn" onClick={onRefresh}>
+
+        <div className="flex items-center gap-2">
+          <span className="text-sm">러닝상태</span>
+          <select
+            className="select select-bordered select-sm"
+            value={runningFilter}
+            onChange={(e) =>
+              setRunningFilter(
+                e.currentTarget.value as "ALL" | "RUNNING" | "STOPPED"
+              )
+            }
+          >
+            <option value="ALL">ALL</option>
+            <option value="RUNNING">RUNNING</option>
+            <option value="STOPPED">STOPPED</option>
+          </select>
+        </div>
+
+        <button className="btn btn-sm" onClick={onRefresh}>
           새로고침
         </button>
       </div>
+
       <div className="flex items-center gap-2">
         <button
-          className={`btn btn-primary ${starting ? "btn-disabled" : ""}`}
+          className={`btn btn-primary btn-sm ${starting ? "btn-disabled" : ""}`}
           onClick={onStart}
           disabled={starting}
         >
           {starting ? "시작 중..." : "선택 시작"}
         </button>
         <button
-          className={`btn ${stopping ? "btn-disabled" : ""}`}
+          className={`btn btn-sm ${stopping ? "btn-disabled" : ""}`}
           onClick={onStop}
           disabled={stopping}
         >
@@ -83,11 +108,13 @@ function BotsTable(props: {
   rows: BotRow[];
   selected: Record<string, boolean>;
   onToggle: (botId: string) => void;
+  onRowClick: (botId: string) => void;
 }) {
-  const { rows, selected, onToggle } = props;
+  const { rows, selected, onToggle, onRowClick } = props;
 
   const headerCells = [
     <th key="_sel" />,
+    <th key="worker">worker</th>,
     <th key="username">username</th>,
     <th key="name">name</th>,
     <th key="mode">mode</th>,
@@ -103,29 +130,40 @@ function BotsTable(props: {
         <tbody>
           {rows.map((r) => {
             const checked = selected[r.id] === true;
-            const rowCells = [
-              <td key="sel">
-                <input
-                  type="checkbox"
-                  className="checkbox"
-                  checked={checked}
-                  onChange={() => onToggle(r.id)}
-                />
-              </td>,
-              <td key="username">{r.username}</td>,
-              <td key="name">{r.name}</td>,
-              <td key="mode">
-                <ModeBadge mode={r.mode} />
-              </td>,
-              <td key="status">
-                <StatusBadge status={r.status} running={r.running} />
-              </td>,
-            ];
-            return <tr key={r.id}>{rowCells}</tr>;
+            return (
+              <tr
+                key={r.id}
+                className="cursor-pointer hover:bg-base-200"
+                onClick={() => onRowClick(r.id)}
+              >
+                <td
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggle(r.id);
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    className="checkbox"
+                    checked={checked}
+                    onChange={() => {} /* handled above */}
+                  />
+                </td>
+                <td className="text-xs text-gray-400">{r.workerId ?? "-"}</td>
+                <td>{r.username}</td>
+                <td>{r.name}</td>
+                <td>
+                  <ModeBadge mode={r.mode} />
+                </td>
+                <td>
+                  <StatusBadge status={r.status} running={r.running} />
+                </td>
+              </tr>
+            );
           })}
           {rows.length === 0 && (
             <tr>
-              <td colSpan={5} className="text-center">
+              <td colSpan={6} className="text-center">
                 데이터가 없습니다.
               </td>
             </tr>
@@ -183,7 +221,11 @@ export default function ListView(props: UseBotsListReturn) {
     pageSize,
     total,
     setPage,
+    runningFilter,
+    setRunningFilter,
   } = props;
+
+  const router = useRouter();
 
   const allChecked = rows.length > 0 && rows.every((r) => selected[r.id]);
 
@@ -199,6 +241,8 @@ export default function ListView(props: UseBotsListReturn) {
         onStop={stopSelected}
         starting={starting}
         stopping={stopping}
+        runningFilter={runningFilter}
+        setRunningFilter={setRunningFilter}
       />
 
       {error && (
@@ -214,7 +258,14 @@ export default function ListView(props: UseBotsListReturn) {
         </div>
       ) : (
         <>
-          <BotsTable rows={rows} selected={selected} onToggle={toggleOne} />
+          <BotsTable
+            rows={rows}
+            selected={selected}
+            onToggle={toggleOne}
+            onRowClick={(botId) => {
+              router.push(`/admin/bots/${botId}`);
+            }}
+          />
           <Pagination
             page={page}
             pageSize={pageSize}

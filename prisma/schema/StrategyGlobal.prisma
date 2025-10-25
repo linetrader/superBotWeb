@@ -1,5 +1,4 @@
 // prisma/schema/StrategyGlobal.prisma
-
 model StrategyGlobalSettings {
   id         String   @id @default(cuid())
   bbw_thresh Decimal  @db.Decimal(8, 6)

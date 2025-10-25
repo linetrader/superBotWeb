@@ -1,3 +1,4 @@
+// prisma/schema/User.prisma
 model User {
   id           String  @id @default(cuid())
   username     String  @unique @db.Citext

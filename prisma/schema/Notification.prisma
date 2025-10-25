@@ -1,5 +1,4 @@
 // prisma/schema/Notification.prisma
-
 model Notification {
   id        String       @id @default(cuid())
   userId    String
