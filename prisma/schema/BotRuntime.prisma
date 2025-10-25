@@ -13,7 +13,7 @@ model BotRuntime {
   lastHeartbeat DateTime?
 
   // ---- 추가 계측 필드 ----
-  lastTickAt    DateTime? // 마지막 실제 틱(전략 실행) 완료 시각
+  lastTickAt    DateTime?
   userTickSec   Int?
   tickDriftSec  Float?
   lastError     String?   @db.Text
@@ -56,6 +56,19 @@ model WorkerGlobalSettings {
   max_bots_per_worker  Int
   is_active            Boolean  @default(true)
   version              Int      @default(1)
+
+  is_local_mode            Boolean  @default(false)
+  scale_enabled            Boolean  @default(false)
+
+  scale_region             String?
+  scale_cluster            String?
+  scale_service_name       String?  // <-- 새로 추가: ECS 서비스 이름 (예: "superbot-ECS")
+  scale_task_definition    String?  // <-- 남겨두지만 이제 안 쓸 수 있음
+  scale_launch_type        String?  @default("FARGATE")
+  scale_subnets            String?
+  scale_security_groups    String?
+  scale_assign_public_ip   String?  @default("ENABLED")
+
   updated_at           DateTime @default(now()) @db.Timestamptz(6)
   created_at           DateTime @default(now()) @db.Timestamptz(6)
 
