@@ -27,7 +27,7 @@ const navTree: NavNode[] = [
     label: "봇 관리",
     children: [
       { label: "봇 목록", href: "/admin/bots/list" },
-      { label: "봇 컨트롤", href: "/admin/bots/control" },
+      { label: "전략 설정", href: "/admin/bots/strategy" },
     ],
   },
   {

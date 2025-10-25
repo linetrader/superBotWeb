@@ -1,3 +1,4 @@
+// src/app/admin/bots/list/hooks/useBotsList.ts
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";

@@ -1,3 +1,4 @@
+// src/app/admin/bots/list/view/ListView.tsx
 "use client";
 
 import type { UseBotsListReturn, BotRow } from "../types";

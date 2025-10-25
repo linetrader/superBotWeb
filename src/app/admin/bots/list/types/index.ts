@@ -1,3 +1,4 @@
+// src/app/admin/bots/list/types/index.ts
 export type BotModeStr = "SINGLE" | "MULTI";
 export type RuntimeStatus =
   | "STOPPED"
