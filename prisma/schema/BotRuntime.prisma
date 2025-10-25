@@ -50,3 +50,27 @@ model WorkerProcess {
   @@index([taskArn])
   @@index([updatedAt])
 }
+
+model WorkerGlobalSettings {
+  id                   String   @id @default(cuid())
+  max_bots_per_worker  Int
+  is_active            Boolean  @default(true)
+  version              Int      @default(1)
+  updated_at           DateTime @default(now()) @db.Timestamptz(6)
+  created_at           DateTime @default(now()) @db.Timestamptz(6)
+
+  histories WorkerGlobalSettingsHistory[] @relation("WorkerGlobalSettingsHistory")
+
+  @@index([is_active], map: "ix_worker_global_is_active")
+}
+
+model WorkerGlobalSettingsHistory {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  settings_id String
+
+  max_bots_per_worker Int
+  version             Int
+  changed_at          DateTime @default(now()) @db.Timestamptz(6)
+
+  settings WorkerGlobalSettings @relation("WorkerGlobalSettingsHistory", fields: [settings_id], references: [id], onDelete: Cascade)
+}
