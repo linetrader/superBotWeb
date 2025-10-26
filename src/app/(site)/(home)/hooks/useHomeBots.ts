@@ -3,7 +3,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getJson, postJson } from "@/app/(site)/bot-config/lib/fetcher";
-import type { BotRow, BotStatus } from "@/types/bot-config";
+import type { BotRow, BotStatus } from "@/app/(site)/bot-config/types";
 import type { BotDetail, HomeViewState } from "../types/home";
 import {
   parseBotsResponse,

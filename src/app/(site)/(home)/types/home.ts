@@ -1,5 +1,5 @@
 // src/types/home.ts
-import type { BotRow, BotStatus } from "@/types/bot-config";
+import type { BotRow, BotStatus } from "@/app/(site)/bot-config/types";
 
 /** 단건 상세(백엔드 GET /api/bot-config/bots/[id]) 응답 데이터 */
 export type BotRawStatus = "STARTING" | "STOPPING" | "ERROR";

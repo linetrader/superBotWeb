@@ -1,5 +1,12 @@
-import HistoryPageClient from "./pageClient";
+// src/app/(site)/history/page.tsx
+"use client";
 
-export default function History() {
-  return <HistoryPageClient />;
+import { useHistoryList } from "./hooks/useHistoryList";
+import HistoryPageView from "./view/HistoryPageView";
+
+function Page() {
+  const data = useHistoryList();
+  return <HistoryPageView {...data} />;
 }
+
+export default Page;

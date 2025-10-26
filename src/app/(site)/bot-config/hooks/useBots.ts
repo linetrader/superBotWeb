@@ -3,7 +3,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getJson, postJson } from "../lib/fetcher";
-import { BotRow, StrategyConfigMeta, ApiResponse } from "@/types/bot-config";
+import { BotRow, StrategyConfigMeta, ApiResponse } from "../types";
 import {
   coerceStatus,
   isBotRow,

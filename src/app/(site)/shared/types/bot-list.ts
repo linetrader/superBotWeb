@@ -1,5 +1,5 @@
 // src/app/(site)/shared/types/bot-list.ts
-import type { BotRow, BotStatus } from "@/types/bot-config";
+import type { BotRow, BotStatus } from "@/app/(site)/bot-config/types";
 
 export type BotListButtons = {
   canStartSelected: boolean;

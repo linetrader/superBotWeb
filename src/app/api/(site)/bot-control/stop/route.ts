@@ -14,6 +14,7 @@ export async function POST(req: NextRequest) {
     return new Response("UNAUTH", { status: 401 });
   }
 
+  // JSON 파싱
   let body: unknown;
   try {
     body = await req.json();
@@ -28,6 +29,7 @@ export async function POST(req: NextRequest) {
 
   const botId = parsed.data.id;
 
+  // 단일 botId STOP 시도
   const result = await controlBots({
     requesterId: userId,
     action: "STOP",
@@ -41,8 +43,10 @@ export async function POST(req: NextRequest) {
     return new Response(msg, { status });
   }
 
+  const first = result.results[0] ?? null;
+
   return Response.json({
     ok: true,
-    workItem: result.results[0]?.workItem ?? null,
+    workItem: first?.workItem ?? null,
   });
 }

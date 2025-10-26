@@ -1,7 +1,8 @@
+// src/app/(site)/shared/view/BotList.tsx
 "use client";
 
 import { useMemo } from "react";
-import type { BotRow, BotStatus } from "@/types/bot-config";
+import type { BotRow, BotStatus } from "@/app/(site)/bot-config/types";
 
 type PendingAction = "start" | "stop" | null;
 

@@ -10,7 +10,7 @@ import {
   GroupKey,
   BotRow,
   BotStatus,
-} from "@/types/bot-config";
+} from "../types";
 
 /* ------------------------ 공통 유틸 ------------------------ */
 export function isApiOk<T>(r: ApiResponse<T>): r is { ok: true; data: T } {

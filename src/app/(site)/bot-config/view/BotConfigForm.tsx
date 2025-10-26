@@ -13,7 +13,7 @@ import {
   MarketKind,
   BotStatus,
   BotRow,
-} from "@/types/bot-config";
+} from "../types";
 import BotList from "@/app/(site)/shared/view/BotList";
 import { useBotStatusWatcher } from "@/app/(site)/shared/hooks/useBotStatusWatcher";
 

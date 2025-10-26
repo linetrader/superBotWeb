@@ -1,5 +1,5 @@
 // src/app/(site)/shared/types/bot-status-watcher.ts
-import type { BotStatus } from "@/types/bot-config";
+import type { BotStatus } from "@/app/(site)/bot-config/types";
 
 export type TargetStatus = Extract<BotStatus, "RUNNING" | "STOPPED">;
 

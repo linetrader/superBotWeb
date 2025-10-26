@@ -1,5 +1,5 @@
 // src/app/(site)/(home)/types/home.ts
-import type { BotRow, BotStatus } from "@/types/bot-config";
+import type { BotRow, BotStatus } from "@/app/(site)/bot-config/types";
 
 /** 개별 버튼 활성화 상태 */
 export type ButtonState = {

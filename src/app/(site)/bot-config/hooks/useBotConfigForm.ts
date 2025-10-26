@@ -13,7 +13,7 @@ import {
   MultiBotInput,
   UseBotConfigFormReturn,
   SubmitState,
-} from "@/types/bot-config";
+} from "../types";
 import { validatePayloadDetailed } from "../gaurd/bot-config";
 
 type UseBotConfigFormArgs = {

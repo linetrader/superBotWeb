@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from "react";
 import { getJson } from "../lib/fetcher";
-import { ExchangeMarketMeta, StrategyConfigMeta } from "@/types/bot-config";
+import { ExchangeMarketMeta, StrategyConfigMeta } from "../types";
 import {
   isExchangeMarketMeta,
   isStrategyConfigMeta,

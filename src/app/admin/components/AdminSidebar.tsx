@@ -39,6 +39,21 @@ const navTree: NavNode[] = [
   },
 
   {
+    label: "프로세스 관리",
+    children: [
+      { label: "프로세스 목록", href: "/admin/process/list" }, // process
+    ],
+  },
+
+  {
+    label: "히스토리 관리",
+    children: [
+      { label: "트레이딩 히스토리", href: "/admin/history/trade" }, //
+      { label: "트레이딩 이벤트", href: "/admin/history/trade-event" }, //
+    ],
+  },
+
+  {
     label: "거래소 관리",
     children: [
       // 5번 요구

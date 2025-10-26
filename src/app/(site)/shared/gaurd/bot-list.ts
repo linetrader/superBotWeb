@@ -1,5 +1,5 @@
 // src/app/(site)/shared/gaurd/bot-list.ts
-import type { BotStatus } from "@/types/bot-config";
+import type { BotStatus } from "@/app/(site)/bot-config/types";
 
 /** DB 원본 상태(단건 GET 등에서 내려오는 statusRaw) */
 export type BotRawStatus = "STARTING" | "STOPPING" | "ERROR";

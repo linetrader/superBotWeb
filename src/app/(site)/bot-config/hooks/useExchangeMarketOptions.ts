@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { getJson } from "../lib/fetcher";
-import { ExchangeMarketMeta } from "@/types/bot-config";
+import { ExchangeMarketMeta } from "../types";
 import { isExchangeMarketMeta } from "../gaurd/bot-config";
 
 type State = {
