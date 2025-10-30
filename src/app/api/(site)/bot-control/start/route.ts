@@ -6,8 +6,10 @@ import { controlBots } from "@/server/botControlService";
 import {
   isBotCurrentlyRunning,
   getBotRuntimeStatus,
-} from "@/server/botRuntimeService"; // ← 추가
+} from "@/server/botRuntimeService";
+import prisma from "@/lib/prisma";
 import { randomUUID } from "crypto";
+import { BotStatus } from "@/generated/prisma";
 
 export const runtime = "nodejs";
 
@@ -36,6 +38,16 @@ function dbg(label: string, fields: Record<string, unknown>): void {
   }
 }
 
+// ---- helpers ----
+function jsonError(status: number, code: string, detail?: unknown): Response {
+  const payload: { ok: false; error: string; detail?: unknown } = {
+    ok: false,
+    error: code,
+  };
+  if (typeof detail !== "undefined") payload.detail = detail;
+  return Response.json(payload, { status });
+}
+
 // ---- route ----
 const BodySchema = z.object({ id: z.string().min(1) });
 
@@ -48,7 +60,7 @@ export async function POST(req: NextRequest) {
   const userId = await getUserId();
   if (!userId) {
     dbg("UNAUTH", { reqId, durMs: msSince(t0) });
-    return new Response("UNAUTH", { status: 401 });
+    return jsonError(401, "UNAUTH");
   }
 
   // JSON 파싱
@@ -57,32 +69,68 @@ export async function POST(req: NextRequest) {
     bodyUnknown = await req.json();
   } catch {
     dbg("INVALID_JSON", { reqId, durMs: msSince(t0) });
-    return new Response("INVALID_JSON", { status: 400 });
+    return jsonError(400, "INVALID_JSON");
   }
 
   const parsed = BodySchema.safeParse(bodyUnknown);
   if (!parsed.success) {
-    dbg("BAD_BODY", { reqId, error: parsed.error.message, durMs: msSince(t0) });
-    return new Response(parsed.error.message, { status: 400 });
+    const msg = parsed.error.message;
+    dbg("BAD_BODY", { reqId, error: msg, durMs: msSince(t0) });
+    return jsonError(400, "BAD_BODY", msg);
   }
 
   const botId = parsed.data.id;
 
-  // (0) 상태가 STOPPED가 아니면 큐잉 금지
+  // (0) 상태 판독
   const status = await getBotRuntimeStatus(botId); // "STOPPED" | "STARTING" | "RUNNING" | "STOPPING" | "ERROR" | null
   dbg("STATUS_CHECK", { reqId, botId, status });
-  if (status !== null && status !== "STOPPED") {
-    // 더 구체적인 거절 사유를 제공
-    dbg("NOT_STOPPED_REJECT", { reqId, botId, status, durMs: msSince(t0) });
-    return new Response("NOT_STOPPED", { status: 409 });
-  }
 
-  // (1) 이미 돌고 있으면 큐에 넣지 않고 거부 (보강 체크)
+  // (0-1) 이미 RUNNING 판단 보강
   const running = await isBotCurrentlyRunning(botId);
   dbg("RUNNING_CHECK", { reqId, botId, running });
   if (running) {
     dbg("ALREADY_RUNNING", { reqId, botId, durMs: msSince(t0) });
-    return new Response("ALREADY_RUNNING", { status: 409 });
+    return jsonError(409, "ALREADY_RUNNING");
+  }
+
+  // (0-2) START 큐잉 허용 정책
+  //  - 허용: status ∈ { null, STOPPED, STOPPING, ERROR }
+  //  - 거부: status ∈ { STARTING, RUNNING }
+  const allowedStatuses: ReadonlySet<BotStatus | null> =
+    new Set<BotStatus | null>([
+      null,
+      BotStatus.STOPPED,
+      BotStatus.STOPPING,
+      BotStatus.ERROR,
+    ]);
+  if (!allowedStatuses.has(status)) {
+    // STARTING | RUNNING
+    dbg("NOT_ALLOWED_TO_START", { reqId, botId, status, durMs: msSince(t0) });
+    return jsonError(409, "NOT_ALLOWED_TO_START", { status });
+  }
+
+  // (1) 선반영: desiredState='RUNNING'
+  //  - row가 있으면 desiredState만 RUNNING으로 올림 (status는 그대로 둠)
+  //  - row가 없으면 생성(status='STARTING', desiredState='RUNNING')
+  try {
+    await prisma.botRuntime.upsert({
+      where: { botId },
+      update: {
+        desiredState: BotStatus.RUNNING,
+        updatedAt: new Date(),
+      },
+      create: {
+        botId,
+        status: BotStatus.STOPPED,
+        desiredState: BotStatus.RUNNING,
+        updatedAt: new Date(),
+      },
+    });
+    dbg("UPSERT_DESIRED_RUNNING", { reqId, botId });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "UPSERT_FAILED";
+    dbg("UPSERT_ERROR", { reqId, botId, msg, durMs: msSince(t0) });
+    return jsonError(500, "UPSERT_DESIRED_RUNNING_FAILED", msg);
   }
 
   // (2) START 큐 enqueue 시도
@@ -101,11 +149,12 @@ export async function POST(req: NextRequest) {
     eligible: result.eligible,
   });
 
-  // controlBots 결과 해석
   if (result.updated === 0) {
     const first = result.results[0];
-    const msg = first?.reason ?? "FAILED_TO_ENQUEUE_START";
-    const statusCode = msg === "NOT_AUTHORIZED_OR_NOT_FOUND" ? 404 : 400;
+    const msg =
+      (first?.reason as string | undefined) ?? "FAILED_TO_ENQUEUE_START";
+    const statusCode: number =
+      msg === "NOT_AUTHORIZED_OR_NOT_FOUND" ? 404 : 400;
     dbg("ENQUEUE_START_FAIL", {
       reqId,
       botId,
@@ -113,7 +162,7 @@ export async function POST(req: NextRequest) {
       status: statusCode,
       durMs: msSince(t0),
     });
-    return new Response(msg, { status: statusCode });
+    return jsonError(statusCode, msg);
   }
 
   const first = result.results[0] ?? null;

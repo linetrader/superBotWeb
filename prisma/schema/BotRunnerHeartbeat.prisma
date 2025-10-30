@@ -1,11 +1,16 @@
 model BotRunnerHeartbeat {
   botId     String
   workerId  String
-  runId     String      // 프로세스 내 해당 runner 인스턴스 식별자(UUID 등)
-  hostname  String?     // 선택
-  pid       Int?        // 선택
-  tickAt    DateTime    @updatedAt
-  createdAt DateTime    @default(now())
+  runId     String        // 러너 인스턴스 UUID
+  hostname  String?
+  pid       Int?
+  tickAt    DateTime      @updatedAt
+  createdAt DateTime      @default(now())
+
+  // 추가
+  startedAt DateTime      @default(now())
+  endedAt   DateTime?     // 종료(또는 선점 상실) 시각
+  leaseVer  Int           @default(1)  // 펜싱 토큰(버전)
 
   @@id([botId, workerId, runId])
   @@index([botId, tickAt])

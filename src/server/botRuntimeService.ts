@@ -3,8 +3,6 @@ import { BotStatus } from "@/generated/prisma";
 import { prisma } from "@/lib/prisma";
 
 // 러닝이라고 간주할 수 있는 heartbeat 유효 기간(초)
-// WorkerManager 가 tick_sec=5s 기준으로 heartbeat를 계속 밀어넣는 구조라서
-// 3배 정도의 여유를 준다.
 const STALE_SECONDS = 15;
 
 // ---- debug helpers ----
@@ -19,7 +17,6 @@ function dbg(label: string, fields: Record<string, unknown>): void {
   if (!RUNTIME_DEBUG) return;
   const ts = new Date().toISOString();
   try {
-    // 문자열화 실패 대비 이중 시도
     console.log(`[bot-runtime] ${label} ${ts} ${JSON.stringify(fields)}`);
   } catch {
     console.log(`[bot-runtime] ${label} ${ts}`, fields);
@@ -30,15 +27,10 @@ function isHeartbeatFresh(
   lastHeartbeat: Date | null | undefined,
   staleSeconds: number
 ): boolean {
-  if (!lastHeartbeat) {
-    return false;
-  }
+  if (!lastHeartbeat) return false;
   const nowMs = Date.now();
   const hbMs = lastHeartbeat.getTime();
-  const diffMs = nowMs - hbMs;
-
-  // diffSec <= staleSeconds 면 아직 살아있는 것으로 본다.
-  const diffSec = diffMs / 1000;
+  const diffSec = (nowMs - hbMs) / 1000;
   return diffSec <= staleSeconds;
 }
 
@@ -59,12 +51,7 @@ export async function getBotRuntimeStatus(
 }
 
 /**
- * 현재 실행 중(RUNNING + 유효 heartbeat + workerId 존재)인지 판별한다.
- * - row 없음: false
- * - status != RUNNING: false
- * - workerId 없음: false
- * - heartbeat stale: false
- * - 그 외: true
+ * 현재 실행 중(RUNNING + 유효 heartbeat + workerId 존재)인지 판별.
  */
 export async function isBotCurrentlyRunning(botId: string): Promise<boolean> {
   const runtimeRow = await prisma.botRuntime.findUnique({
@@ -80,7 +67,6 @@ export async function isBotCurrentlyRunning(botId: string): Promise<boolean> {
     dbg("RUNNING_CHECK", { botId, running: false, reason: "NO_ROW" });
     return false;
   }
-
   if (runtimeRow.status !== BotStatus.RUNNING) {
     dbg("RUNNING_CHECK", {
       botId,
@@ -90,16 +76,10 @@ export async function isBotCurrentlyRunning(botId: string): Promise<boolean> {
     });
     return false;
   }
-
   if (!runtimeRow.workerId) {
-    dbg("RUNNING_CHECK", {
-      botId,
-      running: false,
-      reason: "NO_WORKER",
-    });
+    dbg("RUNNING_CHECK", { botId, running: false, reason: "NO_WORKER" });
     return false;
   }
-
   if (!isHeartbeatFresh(runtimeRow.lastHeartbeat, STALE_SECONDS)) {
     dbg("RUNNING_CHECK", {
       botId,
@@ -116,10 +96,10 @@ export async function isBotCurrentlyRunning(botId: string): Promise<boolean> {
 }
 
 /**
- * START 큐잉 허용 여부를 판단한다.
- * 정책: 상태가 정확히 STOPPED 이거나, 런타임 row 자체가 없을 때만 허용.
- * 그 외 상태(STARTING/RUNNING/STOPPING/ERROR)는 모두 금지.
- * 라우터 단계에서 선제 차단 용도로 사용.
+ * START 큐잉 허용 여부 판단.
+ * 정책(완화):
+ *  - 허용: status ∈ { null, STOPPED, STOPPING, ERROR }
+ *  - 거부: status ∈ { STARTING, RUNNING }
  */
 export async function isStartQueuingAllowed(botId: string): Promise<{
   allowed: boolean;
@@ -128,18 +108,20 @@ export async function isStartQueuingAllowed(botId: string): Promise<{
 }> {
   const status = await getBotRuntimeStatus(botId);
 
-  if (status === null) {
-    // 최초 실행 전 등: 허용
-    dbg("START_ALLOWED", { botId, status: null, reason: "NO_ROW" });
-    return { allowed: true, status: null, reason: null };
-  }
+  // 허용 집합
+  const allowedSet: ReadonlySet<BotStatus | null> = new Set<BotStatus | null>([
+    null,
+    BotStatus.STOPPED,
+    BotStatus.STOPPING,
+    BotStatus.ERROR,
+  ]);
 
-  if (status === BotStatus.STOPPED) {
+  if (allowedSet.has(status)) {
     dbg("START_ALLOWED", { botId, status, reason: null });
     return { allowed: true, status, reason: null };
   }
 
-  // STOPPED 가 아니면 큐잉 금지
-  dbg("START_BLOCKED", { botId, status, reason: "NOT_STOPPED" });
-  return { allowed: false, status, reason: "NOT_STOPPED" };
+  // STARTING/RUNNING 은 차단
+  dbg("START_BLOCKED", { botId, status, reason: "NOT_ALLOWED_STATE" });
+  return { allowed: false, status, reason: "NOT_ALLOWED_STATE" };
 }

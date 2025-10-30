@@ -32,6 +32,16 @@ function dbg(label: string, fields: Record<string, unknown>): void {
   }
 }
 
+// ---- helpers ----
+function jsonError(status: number, code: string, detail?: unknown): Response {
+  const payload: { ok: false; error: string; detail?: unknown } = {
+    ok: false,
+    error: code,
+  };
+  if (typeof detail !== "undefined") payload.detail = detail;
+  return Response.json(payload, { status });
+}
+
 // ---- route ----
 const BodySchema = z.object({ id: z.string().min(1) });
 
@@ -43,7 +53,7 @@ export async function POST(req: NextRequest) {
   const userId = await getUserId();
   if (!userId) {
     dbg("UNAUTH", { reqId, durMs: msSince(t0) });
-    return new Response("UNAUTH", { status: 401 });
+    return jsonError(401, "UNAUTH");
   }
 
   // JSON 파싱
@@ -52,15 +62,15 @@ export async function POST(req: NextRequest) {
     body = await req.json();
   } catch {
     dbg("INVALID_JSON", { reqId, durMs: msSince(t0) });
-    return new Response("INVALID_JSON", { status: 400 });
+    return jsonError(400, "INVALID_JSON");
   }
 
   const parsed = BodySchema.safeParse(body);
   if (!parsed.success) {
-    dbg("BAD_BODY", { reqId, error: parsed.error.message, durMs: msSince(t0) });
-    return new Response(parsed.error.message, { status: 400 });
+    const msg = parsed.error.message;
+    dbg("BAD_BODY", { reqId, error: msg, durMs: msSince(t0) });
+    return jsonError(400, "BAD_BODY", msg);
   }
-
   const botId = parsed.data.id;
 
   // 단일 botId STOP 시도
@@ -81,7 +91,8 @@ export async function POST(req: NextRequest) {
 
   if (result.updated === 0) {
     const first = result.results[0];
-    const msg = first?.reason ?? "FAILED_TO_ENQUEUE_STOP";
+    const msg =
+      (first?.reason as string | undefined) ?? "FAILED_TO_ENQUEUE_STOP";
     const status = msg === "NOT_AUTHORIZED_OR_NOT_FOUND" ? 404 : 400;
     dbg("ENQUEUE_STOP_FAIL", {
       reqId,
@@ -90,7 +101,7 @@ export async function POST(req: NextRequest) {
       status,
       durMs: msSince(t0),
     });
-    return new Response(msg, { status });
+    return jsonError(status, msg);
   }
 
   const first = result.results[0] ?? null;

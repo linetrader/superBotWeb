@@ -103,13 +103,14 @@ export async function controlBots(
   const downlineSet = await collectAllDownlineIds(requesterId);
   const allowedUserIdsSet = new Set<string>([requesterId, ...downlineSet]);
 
-  // 요청된 bot들만 조회 (권한 필터는 여기선 안 걸고, 아래에서 우리가 직접 체크)
+  // 요청된 bot들만 조회 (권한 필터는 여기선 안 걸고, 아래에서 직접 체크)
   const bots = await prisma.tradingBot.findMany({
     where: { id: { in: dedupedIds } },
     select: {
       id: true,
       userId: true,
-      BotRuntime: { select: { status: true } },
+      // 🔼 변경: STOP 라우팅 타게팅을 위해 workerId도 함께 조회
+      BotRuntime: { select: { status: true, workerId: true } },
     },
   });
 
@@ -117,11 +118,11 @@ export async function controlBots(
   interface BotRecord {
     id: string;
     userId: string;
-    BotRuntime: { status: string | null } | null;
+    BotRuntime: { status: string | null; workerId: string | null } | null;
   }
   const botMap = new Map<string, BotRecord>();
   for (const b of bots) {
-    botMap.set(b.id, b);
+    botMap.set(b.id, b as BotRecord);
   }
 
   // 상태 허용 규칙
@@ -148,7 +149,7 @@ export async function controlBots(
     }
 
     // 2) 현재 runtime status 판정
-    const curStatus = normalizeRuntimeStatus(found.BotRuntime?.status);
+    const curStatus = normalizeRuntimeStatus(found.BotRuntime?.status ?? null);
 
     // 3) 이 상태에서 action 가능한지 판별
     const canStart = action === "START" && START_ALLOWED.has(curStatus);
@@ -164,12 +165,40 @@ export async function controlBots(
       continue;
     }
 
+    // 🔽 변경: STOP이면 desiredState를 즉시 STOPPED로 선반영(멱등 upsert)
+    if (action === "STOP") {
+      try {
+        await prisma.botRuntime.upsert({
+          where: { botId: found.id },
+          update: {
+            desiredState: "STOPPED",
+            // 운영 선호에 따라 다음 라인 활성화 가능:
+            // status: "STOPPING",
+            updatedAt: new Date(),
+          },
+          create: {
+            botId: found.id,
+            desiredState: "STOPPED",
+            status: "STOPPING",
+            updatedAt: new Date(),
+          },
+        });
+      } catch {
+        // 선반영 실패는 STOP 큐잉 자체는 막지 않음 (로그만 운영 레벨에서 처리)
+      }
+    }
+
     eligibleCount += 1;
 
     // 4) enqueue 시도
     const workType =
       action === "START" ? WorkType.START_BOT : WorkType.STOP_BOT;
+
     try {
+      // 🔽 변경: STOP 큐잉 시 payload에 targetWorkerId 포함(러너 워커로 라우팅)
+      const targetWorkerId =
+        action === "STOP" ? (found.BotRuntime?.workerId ?? null) : null;
+
       const workItem = await enqueueWorkItem({
         userId: found.userId,
         botId: found.id,
@@ -178,7 +207,10 @@ export async function controlBots(
           action: action === "START" ? "START_BOT" : "STOP_BOT",
           botId: found.id,
           requestedBy: requesterId,
+          targetWorkerId, // 워커 측에서 이 값을 보고 STOP_BOT을 해당 워커만 lease하도록 필터
         },
+        // 필요시 워커 파티셔닝 강화:
+        // sqsGroupId: targetWorkerId ?? found.id,
       });
 
       successCount += 1;
