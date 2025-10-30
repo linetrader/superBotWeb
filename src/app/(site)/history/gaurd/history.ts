@@ -22,7 +22,7 @@ function isStatus(v: unknown): v is "OPEN" | "CLOSED" {
 }
 
 // -----------------------------------------
-// HistoryRow 파서
+// HistoryRow 파서 (ROI/Profit 없을 때도 허용)
 // -----------------------------------------
 function parseRow(raw: unknown): HistoryRow | null {
   if (typeof raw !== "object" || raw === null) {
@@ -40,19 +40,27 @@ function parseRow(raw: unknown): HistoryRow | null {
   const leverageOk = isNumber(o.leverage);
   const statusOk = isStatus(o.status);
 
-  const entryQtyOk = isNumber(o.entryQty);
-  const entryPriceOk = isNullableString(o.entryPrice);
-  const entryCostOk = isNullableString(o.entryCostUsdt);
-  const entryNotionalOk = isNullableString(o.entryNotionalUsdt);
+  const entryPriceOk =
+    o.entryPrice === undefined || isNullableString(o.entryPrice);
+  const entryCostOk =
+    o.entryCostUsdt === undefined || isNullableString(o.entryCostUsdt);
+  const entryNotionalOk =
+    o.entryNotionalUsdt === undefined || isNullableString(o.entryNotionalUsdt);
   const openedAtOk = isString(o.openedAt);
 
-  const closeQtyOk = o.closeQty === null || isNumber(o.closeQty);
-  const closePriceOk = isNullableString(o.closePrice);
-  const closeNotionalOk = isNullableString(o.closeNotionalUsdt);
-  const closedAtOk = o.closedAt === null || isString(o.closedAt);
+  const closeQtyOk =
+    o.closeQty === undefined || o.closeQty === null || isNumber(o.closeQty);
+  const closePriceOk =
+    o.closePrice === undefined || isNullableString(o.closePrice);
+  const closeNotionalOk =
+    o.closeNotionalUsdt === undefined || isNullableString(o.closeNotionalUsdt);
+  const closedAtOk =
+    o.closedAt === undefined || o.closedAt === null || isString(o.closedAt);
 
-  // ✅ profitUsdt도 string | null
-  const profitOk = isNullableString(o.profitUsdt);
+  // 실현 손익(USDT) / ROI(%) → 필드가 없을 수도 있으므로 undefined 허용
+  const profitOk = o.profitUsdt === undefined || isNullableString(o.profitUsdt);
+  const roiOk =
+    o.realizedRoiPct === undefined || isNullableString(o.realizedRoiPct);
 
   if (
     !botIdOk ||
@@ -62,7 +70,6 @@ function parseRow(raw: unknown): HistoryRow | null {
     !sideOk ||
     !leverageOk ||
     !statusOk ||
-    !entryQtyOk ||
     !entryPriceOk ||
     !entryCostOk ||
     !entryNotionalOk ||
@@ -71,35 +78,37 @@ function parseRow(raw: unknown): HistoryRow | null {
     !closePriceOk ||
     !closeNotionalOk ||
     !closedAtOk ||
-    !profitOk
+    !profitOk ||
+    !roiOk
   ) {
     return null;
   }
 
   return {
-    botId: o.botId,
-    botName: o.botName,
+    botId: o.botId as string,
+    botName: o.botName as string,
 
-    exchange: o.exchange,
+    exchange: o.exchange as string,
 
-    symbol: o.symbol,
-    side: o.side,
-    leverage: o.leverage,
-    status: o.status,
+    symbol: o.symbol as string,
+    side: o.side as "LONG" | "SHORT",
+    leverage: o.leverage as number,
+    status: o.status as "OPEN" | "CLOSED",
 
-    entryQty: o.entryQty,
-    entryPrice: o.entryPrice,
-    entryCostUsdt: o.entryCostUsdt,
-    entryNotionalUsdt: o.entryNotionalUsdt,
-    openedAt: o.openedAt,
+    entryPrice: (o.entryPrice as string | null) ?? null,
+    entryCostUsdt: (o.entryCostUsdt as string | null) ?? null,
+    entryNotionalUsdt: (o.entryNotionalUsdt as string | null) ?? null,
+    openedAt: o.openedAt as string,
 
-    closeQty: o.closeQty,
-    closePrice: o.closePrice,
-    closeNotionalUsdt: o.closeNotionalUsdt,
-    closedAt: o.closedAt,
+    closeQty: (o.closeQty as number | null) ?? null,
+    closePrice: (o.closePrice as string | null) ?? null,
+    closeNotionalUsdt: (o.closeNotionalUsdt as string | null) ?? null,
+    closedAt: (o.closedAt as string | null) ?? null,
 
-    profitUsdt: o.profitUsdt,
-  } as HistoryRow;
+    // 없으면 null로 보정
+    profitUsdt: (o.profitUsdt as string | null) ?? null,
+    realizedRoiPct: (o.realizedRoiPct as string | null) ?? null,
+  };
 }
 
 // -----------------------------------------
@@ -177,25 +186,18 @@ export function parseHistoryListResponse(raw: unknown): HistoryListResponse {
         isNumber(totalRaw) &&
         Array.isArray(botsRaw)
       ) {
-        // rows
         const rowsParsed: HistoryRow[] = [];
         for (const item of dataRaw) {
           const row = parseRow(item);
-          if (row) {
-            rowsParsed.push(row);
-          }
+          if (row) rowsParsed.push(row);
         }
 
-        // bot options
         const botsParsed: BotOption[] = [];
         for (const b of botsRaw) {
           const opt = parseBotOption(b);
-          if (opt) {
-            botsParsed.push(opt);
-          }
+          if (opt) botsParsed.push(opt);
         }
 
-        // symbols
         const symbolsParsed = parseStringArray(symbolsRaw) ?? [];
 
         return {

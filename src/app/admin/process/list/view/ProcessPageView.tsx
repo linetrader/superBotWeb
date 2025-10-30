@@ -5,7 +5,6 @@ import { useCallback } from "react";
 import type { UseProcessListReturn, AliveFilter, ProcessRow } from "../types";
 import ProcessTable from "./ProcessTable";
 
-// 빈 interface 대신 type alias
 type ProcessPageViewProps = UseProcessListReturn;
 
 function ProcessPageView(props: ProcessPageViewProps) {
@@ -26,6 +25,9 @@ function ProcessPageView(props: ProcessPageViewProps) {
     deleting,
     deleteSelected,
 
+    staleDeletableCount,
+    deleteAllStale,
+
     stopLoadingMap,
     stopAllBotsForWorker,
   } = props;
@@ -45,6 +47,10 @@ function ProcessPageView(props: ProcessPageViewProps) {
   const onToggleAllClick = useCallback(() => {
     toggleAll(rows as ProcessRow[]);
   }, [toggleAll, rows]);
+
+  const onDeleteAllStaleClick = useCallback(() => {
+    deleteAllStale();
+  }, [deleteAllStale]);
 
   return (
     <main className="p-4 flex flex-col gap-4">
@@ -92,7 +98,7 @@ function ProcessPageView(props: ProcessPageViewProps) {
 
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div className="text-sm text-base-content/70">
-              선택됨 {idsSelected.length}개
+              선택됨 {idsSelected.length}개 / STALE {staleDeletableCount}개
             </div>
 
             <div className="flex flex-row flex-wrap gap-2">
@@ -112,6 +118,17 @@ function ProcessPageView(props: ProcessPageViewProps) {
                   <span className="loading loading-spinner loading-xs" />
                 ) : null}
                 <span>선택삭제(STALE만)</span>
+              </button>
+
+              <button
+                className="btn btn-xs btn-warning"
+                disabled={deleting}
+                onClick={onDeleteAllStaleClick}
+              >
+                {deleting ? (
+                  <span className="loading loading-spinner loading-xs" />
+                ) : null}
+                <span>STALE 전체삭제</span>
               </button>
             </div>
           </div>

@@ -18,6 +18,16 @@ export interface ProcessRow {
   isZombieSuspect: boolean;
 }
 
+/**
+ * "해당 워커가 현재 들고 있는 봇" 1건
+ * - /api/admin/process/[workerId]/bots 에서 내려주는 항목
+ */
+export interface WorkerBotRow {
+  botId: string;
+  botName: string;
+  username: string;
+}
+
 export type ProcessListResponse =
   | {
       ok: true;
@@ -31,8 +41,33 @@ export type ProcessListResponse =
       error: string;
     };
 
+/**
+ * /api/admin/process/[workerId]/bots 응답
+ */
+export type WorkerBotListResponse =
+  | {
+      ok: true;
+      data: WorkerBotRow[];
+    }
+  | {
+      ok: false;
+      error: string;
+    };
+
+/**
+ * DELETE /api/admin/process/list payload
+ *
+ * (1) 선택 삭제:
+ *    { processIds: ["wm-...", "wm-..."] }
+ *
+ * (2) 전체 STALE 삭제:
+ *    { deleteAllStale: true }
+ *
+ * 두 필드 중 하나만 보내면 된다.
+ */
 export interface BulkDeletePayload {
-  processIds: string[];
+  processIds?: string[];
+  deleteAllStale?: boolean;
 }
 
 export type BulkDeleteResponse =
@@ -49,17 +84,6 @@ export type BulkDeleteResponse =
 
 /**
  * stop-all (POST /api/admin/process/[workerId]/stop-all) 응답
- *
- * 예:
- * {
- *   ok: true,
- *   data: {
- *     requested: number;
- *     eligible: number;
- *     updated: number;
- *     stoppedOkIds: string[];
- *   }
- * }
  */
 export type StopAllResponse =
   | {
@@ -76,6 +100,9 @@ export type StopAllResponse =
       error: string;
     };
 
+/**
+ * useProcessList 훅에서 view 계층으로 내려주는 전체 상태/액션 컨트랙트
+ */
 export interface UseProcessListReturn {
   loading: boolean;
   error: string | null;
@@ -96,12 +123,28 @@ export interface UseProcessListReturn {
   toggleAll: (currentRows: ProcessRow[]) => void;
   clearSelection: () => void;
 
+  /** 삭제 중 여부 (선택삭제/전체삭제 공용) */
   deleting: boolean;
+
+  /** 선택된 STALE들만 삭제 */
   deleteSelected: () => Promise<void>;
+
+  /**
+   * 현재 페이지 rows 기준으로 alive === false 인 개수
+   * (화면 표시에만 사용; 실제 전체삭제는 모든 페이지 STALE을 서버에서 지움)
+   */
+  staleDeletableCount: number;
+
+  /**
+   * 전체 STALE 삭제 (모든 페이지 대상)
+   * 서버에 { deleteAllStale: true } 로 DELETE 요청
+   */
+  deleteAllStale: () => Promise<void>;
 
   /** workerId -> true if stop-all in progress */
   stopLoadingMap: Record<string, boolean>;
   stopAllBotsForWorker: (workerId: string) => Promise<void>;
 
+  /** 리스트 재요청 */
   refresh: () => void;
 }

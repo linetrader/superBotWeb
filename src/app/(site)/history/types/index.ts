@@ -12,7 +12,7 @@ export interface HistoryRow {
   leverage: number;
   status: "OPEN" | "CLOSED";
 
-  entryQty: number;
+  // ※ entryQty 제거
   entryPrice: string | null;
   entryCostUsdt: string | null;
   entryNotionalUsdt: string | null;
@@ -23,8 +23,11 @@ export interface HistoryRow {
   closeNotionalUsdt: string | null;
   closedAt: string | null;
 
-  // ✅ 실현 손익 (realizedPnlUsdt)
+  // 실현 손익 (realizedPnlUsdt)
   profitUsdt: string | null;
+
+  // 실현 ROI (%). 서버가 DB값을 문자열로 내려줌.
+  realizedRoiPct: string | null;
 }
 
 // 셀렉트 박스에 쓸 봇 옵션

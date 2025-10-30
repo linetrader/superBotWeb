@@ -21,6 +21,7 @@ function isAliveFilter(v: string | null): v is "ALL" | "ACTIVE" | "STALE" {
   return v === "ALL" || v === "ACTIVE" || v === "STALE";
 }
 
+// GET /api/admin/process/list
 export async function GET(req: NextRequest) {
   const adminId = await getUserId();
   if (!adminId) {
@@ -183,6 +184,10 @@ export async function GET(req: NextRequest) {
   });
 }
 
+// DELETE /api/admin/process/list
+// payload:
+//   { processIds: string[] }  -> 선택삭제(STALE만) 기존 동작
+//   { deleteAllStale: true }  -> 접근 가능한 모든 STALE 워커 삭제 (페이지/선택 무관)
 export async function DELETE(req: NextRequest) {
   const adminId = await getUserId();
   if (!adminId) {
@@ -208,11 +213,7 @@ export async function DELETE(req: NextRequest) {
     );
   }
 
-  if (
-    typeof bodyJson !== "object" ||
-    bodyJson === null ||
-    !Array.isArray((bodyJson as Record<string, unknown>).processIds)
-  ) {
+  if (typeof bodyJson !== "object" || bodyJson === null) {
     return NextResponse.json(
       {
         ok: false,
@@ -222,10 +223,98 @@ export async function DELETE(req: NextRequest) {
     );
   }
 
-  const processIdsUnknown = (bodyJson as Record<string, unknown>).processIds;
+  const bodyRec = bodyJson as Record<string, unknown>;
+  const wantsDeleteAllStale = bodyRec.deleteAllStale === true ? true : false;
+
+  // admin + downline set
+  const downlineSet = await collectAllDownlineIds(adminId);
+  downlineSet.add(adminId);
+
+  const now = new Date();
+
+  // 경로 A: 전체 STALE 삭제 (페이지/선택 무관)
+  if (wantsDeleteAllStale) {
+    // 접근 가능한 모든 workerProcess 로드
+    const procsAll = await prisma.workerProcess.findMany({
+      include: {
+        botRuntimes: {
+          select: {
+            bot: {
+              select: {
+                userId: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const deletableIdsAll: string[] = [];
+
+    for (const p of procsAll) {
+      // 1) 이 워커에 연결된 모든 bot.userId가 downlineSet 안에 있어야 함
+      const allBotsAreMine = p.botRuntimes.every((rt) =>
+        downlineSet.has(rt.bot.userId)
+      );
+      if (!allBotsAreMine) {
+        continue;
+      }
+
+      // 2) STALE 판정 (alive=false)
+      const lastHb: Date | null = p.lastHeartbeat ?? null;
+      let alive = false;
+      if (lastHb) {
+        const diff = now.getTime() - lastHb.getTime();
+        alive = diff <= STALE_THRESHOLD_MS;
+      }
+      if (alive) {
+        // ACTIVE는 삭제 대상 아님
+        continue;
+      }
+
+      deletableIdsAll.push(p.id);
+    }
+
+    if (deletableIdsAll.length === 0) {
+      return NextResponse.json({
+        ok: true,
+        data: {
+          deleted: 0,
+        },
+      });
+    }
+
+    const resultAll = await prisma.workerProcess.deleteMany({
+      where: {
+        id: {
+          in: deletableIdsAll,
+        },
+      },
+    });
+
+    return NextResponse.json({
+      ok: true,
+      data: {
+        deleted: resultAll.count,
+      },
+    });
+  }
+
+  // 경로 B: 선택삭제 (기존 로직)
+  if (!Array.isArray(bodyRec.processIds)) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "INVALID_PAYLOAD",
+      },
+      { status: 400 }
+    );
+  }
+
+  const processIdsUnknown = bodyRec.processIds as unknown[];
 
   const processIds: string[] = [];
-  for (const pid of processIdsUnknown as unknown[]) {
+  for (const pid of processIdsUnknown) {
     if (typeof pid === "string" && pid.length > 0) {
       processIds.push(pid);
     }
@@ -241,13 +330,7 @@ export async function DELETE(req: NextRequest) {
     );
   }
 
-  // admin + downline set
-  const downlineSet = await collectAllDownlineIds(adminId);
-  downlineSet.add(adminId);
-
   // 후보 프로세스 로드
-  const now = new Date();
-
   const procs = await prisma.workerProcess.findMany({
     where: {
       id: {

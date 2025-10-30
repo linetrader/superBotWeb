@@ -15,56 +15,65 @@ interface HistoryTableProps {
   refresh: () => void;
 }
 
+/**
+ * 참고: HistoryRow는 /api/(site)/history 응답 형태와 동일해야 한다.
+ * (요청대로 entryQty 표시는 제거)
+ */
+
 function HistoryTable(props: HistoryTableProps) {
   const { loading, error, rows, page, pageSize, total, setPage, refresh } =
     props;
 
-  const totalPages = useMemo(() => {
-    if (pageSize <= 0) {
-      return 1;
-    }
+  const totalPages = useMemo((): number => {
+    if (pageSize <= 0) return 1;
     const calc = Math.ceil(total / pageSize);
     return calc > 0 ? calc : 1;
   }, [total, pageSize]);
 
-  const goPrev = useCallback(() => {
-    if (page > 1) {
-      setPage(page - 1);
-    }
+  const goPrev = useCallback((): void => {
+    if (page > 1) setPage(page - 1);
   }, [page, setPage]);
 
-  const goNext = useCallback(() => {
-    if (page < totalPages) {
-      setPage(page + 1);
-    }
+  const goNext = useCallback((): void => {
+    if (page < totalPages) setPage(page + 1);
   }, [page, totalPages, setPage]);
 
   function formatDate(iso: string | null): string {
-    if (!iso) {
-      return "-";
-    }
+    if (!iso) return "-";
     return iso.replace("T", " ").replace("Z", "");
   }
 
-  // 수익(실현 손익) 렌더링: 양수 초록, 음수 빨강, 0/없음 회색
   function renderProfit(raw: string | null) {
-    if (!raw) {
-      return <span className="text-base-content/50">-</span>;
-    }
-
+    if (!raw) return <span className="text-base-content/50">-</span>;
     const num = Number(raw);
-    if (!Number.isFinite(num)) {
+    if (!Number.isFinite(num))
       return <span className="text-base-content/50">-</span>;
-    }
-
     let cls = "text-base-content/70";
-    if (num > 0) {
-      cls = "text-green-500 font-semibold";
-    } else if (num < 0) {
-      cls = "text-red-500 font-semibold";
-    }
-
+    if (num > 0) cls = "text-green-500 font-semibold";
+    else if (num < 0) cls = "text-red-500 font-semibold";
     return <span className={cls}>{raw}</span>;
+  }
+
+  function renderRoi(raw: string | null | undefined) {
+    if (!raw) return <span className="text-base-content/50">-</span>;
+    const num = Number(raw);
+    if (!Number.isFinite(num))
+      return <span className="text-base-content/50">-</span>;
+    let cls = "text-base-content/70";
+    if (num > 0) cls = "text-green-500 font-semibold";
+    else if (num < 0) cls = "text-red-500 font-semibold";
+    return (
+      <span className={cls}>
+        {raw}
+        <span className="opacity-70">%</span>
+      </span>
+    );
+  }
+
+  function renderStatusBadge(status: string) {
+    const badgeClass =
+      status === "OPEN" ? "badge badge-success" : "badge badge-neutral";
+    return <div className={badgeClass}>{status}</div>;
   }
 
   return (
@@ -125,23 +134,16 @@ function HistoryTable(props: HistoryTableProps) {
         {!loading && !error && rows.length > 0 ? (
           <div className="grid grid-cols-1 gap-2 md:hidden">
             {rows.map((row, idx) => {
-              const statusBadgeClass =
-                row.status === "OPEN"
-                  ? "badge badge-success"
-                  : "badge badge-neutral";
-
               return (
                 <div
                   key={idx}
                   className="border border-base-300 rounded-box p-3 flex flex-col gap-2"
                 >
-                  {/* 첫 줄: 봇 이름 + 상태 */}
                   <div className="flex flex-row justify-between items-start">
                     <div className="text-sm font-semibold">{row.botName}</div>
-                    <div className={statusBadgeClass}>{row.status}</div>
+                    {renderStatusBadge(row.status)}
                   </div>
 
-                  {/* 거래소 / 심볼 */}
                   <div className="text-[12px] flex flex-wrap gap-x-4 gap-y-1">
                     <div>
                       거래소:{" "}
@@ -152,7 +154,6 @@ function HistoryTable(props: HistoryTableProps) {
                     </div>
                   </div>
 
-                  {/* 방향 / 레버리지 */}
                   <div className="text-[12px] flex flex-wrap gap-x-4 gap-y-1">
                     <div>
                       방향: <span className="font-semibold">{row.side}</span>
@@ -163,8 +164,7 @@ function HistoryTable(props: HistoryTableProps) {
                     </div>
                   </div>
 
-                  {/* 진입 정보 */}
-                  <div className="text-[12px] flex flex-wrap gap-x-4 gap-y-1">
+                  <div className="text-[12px] flex flex-col gap-y-1">
                     <div>
                       진입USDT:{" "}
                       <span className="font-semibold">
@@ -179,7 +179,6 @@ function HistoryTable(props: HistoryTableProps) {
                     </div>
                   </div>
 
-                  {/* 수익 */}
                   <div className="text-[12px] flex flex-wrap gap-x-4 gap-y-1">
                     <div>
                       수익:{" "}
@@ -187,9 +186,14 @@ function HistoryTable(props: HistoryTableProps) {
                         {renderProfit(row.profitUsdt)}
                       </span>
                     </div>
+                    <div>
+                      ROI:{" "}
+                      <span className="font-semibold">
+                        {renderRoi(row.realizedRoiPct)}
+                      </span>
+                    </div>
                   </div>
 
-                  {/* 시간 */}
                   <div className="text-[11px] text-base-content/60 flex flex-col gap-1">
                     <div>진입시간: {formatDate(row.openedAt)}</div>
                     <div>청산시간: {formatDate(row.closedAt)}</div>
@@ -215,63 +219,41 @@ function HistoryTable(props: HistoryTableProps) {
                   <th>진입USDT</th>
                   <th>진입가격</th>
                   <th>수익</th>
+                  <th>ROI</th>
                   <th>진입시간</th>
                   <th>청산시간</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map((row, idx) => {
-                  const statusBadgeClass =
-                    row.status === "OPEN"
-                      ? "badge badge-success"
-                      : "badge badge-neutral";
-
                   return (
                     <tr
                       key={idx}
                       className="hover:bg-base-200 transition-colors"
                     >
-                      {/* status */}
                       <td className="align-top">
-                        <div className={statusBadgeClass}>{row.status}</div>
+                        {renderStatusBadge(row.status)}
                       </td>
-
-                      {/* bot */}
                       <td className="text-[11px] align-top">{row.botName}</td>
-
-                      {/* exchange */}
                       <td className="text-[11px] align-top">{row.exchange}</td>
-
-                      {/* symbol */}
                       <td className="text-[11px] align-top">{row.symbol}</td>
-
-                      {/* side */}
                       <td className="text-[11px] align-top">{row.side}</td>
-
-                      {/* lev */}
                       <td className="text-[11px] align-top">{row.leverage}</td>
-
-                      {/* entryCostUsdt */}
                       <td className="text-[11px] align-top">
                         {row.entryCostUsdt ?? "-"}
                       </td>
-
-                      {/* entryPrice */}
                       <td className="text-[11px] align-top">
                         {row.entryPrice ?? "-"}
                       </td>
-
-                      {/* profit / 수익 */}
                       <td className="text-[11px] align-top">
                         {renderProfit(row.profitUsdt)}
                       </td>
-
-                      {/* openedAt */}
+                      <td className="text-[11px] align-top">
+                        {renderRoi(row.realizedRoiPct)}
+                      </td>
                       <td className="text-[11px] align-top">
                         {formatDate(row.openedAt)}
                       </td>
-
-                      {/* closedAt */}
                       <td className="text-[11px] align-top">
                         {formatDate(row.closedAt)}
                       </td>

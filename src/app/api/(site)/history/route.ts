@@ -7,29 +7,20 @@ import { Prisma } from "@/generated/prisma";
 const PAGE_SIZE = 10;
 
 function toIntOrDefault(v: string | null, def: number): number {
-  if (!v) {
-    return def;
-  }
+  if (!v) return def;
   const n = parseInt(v, 10);
-  if (!Number.isFinite(n) || n <= 0) {
-    return def;
-  }
+  if (!Number.isFinite(n) || n <= 0) return def;
   return n;
 }
 
 function normalizeFilter(v: string | null): string | undefined {
-  if (!v) {
-    return undefined;
-  }
+  if (!v) return undefined;
   const t = v.trim();
-  if (t.length === 0) {
-    return undefined;
-  }
+  if (t.length === 0) return undefined;
   return t;
 }
 
 export async function GET(req: NextRequest) {
-  // 로그인 사용자
   const userId = await getUserId();
   if (!userId) {
     return NextResponse.json(
@@ -39,7 +30,6 @@ export async function GET(req: NextRequest) {
   }
 
   const { searchParams } = req.nextUrl;
-
   const pageParam = searchParams.get("page");
   const botIdParam = searchParams.get("botId");
   const symbolParam = searchParams.get("symbol");
@@ -50,16 +40,9 @@ export async function GET(req: NextRequest) {
 
   // 내가 가진 봇들
   const myBots = await prisma.tradingBot.findMany({
-    where: {
-      userId: userId,
-    },
-    select: {
-      id: true,
-      name: true,
-    },
-    orderBy: {
-      name: "asc",
-    },
+    where: { userId },
+    select: { id: true, name: true },
+    orderBy: { name: "asc" },
   });
 
   if (myBots.length === 0) {
@@ -78,16 +61,10 @@ export async function GET(req: NextRequest) {
 
   // symbol 옵션 목록
   const symbolRows = await prisma.trade.findMany({
-    where: {
-      botId: { in: myBotIdsAll },
-    },
+    where: { botId: { in: myBotIdsAll } },
     distinct: ["symbol"],
-    select: {
-      symbol: true,
-    },
-    orderBy: {
-      symbol: "asc",
-    },
+    select: { symbol: true },
+    orderBy: { symbol: "asc" },
   });
 
   const allSymbolsForUser: string[] = symbolRows
@@ -102,9 +79,7 @@ export async function GET(req: NextRequest) {
     : myBotIdsAll;
 
   const whereTrade: Prisma.TradeWhereInput = {
-    botId: {
-      in: effectiveBotIds,
-    },
+    botId: { in: effectiveBotIds },
     ...(symbolFilter
       ? {
           symbol: {
@@ -118,9 +93,7 @@ export async function GET(req: NextRequest) {
   const total =
     effectiveBotIds.length === 0
       ? 0
-      : await prisma.trade.count({
-          where: whereTrade,
-        });
+      : await prisma.trade.count({ where: whereTrade });
 
   const startIdx = (page - 1) * PAGE_SIZE;
 
@@ -129,36 +102,32 @@ export async function GET(req: NextRequest) {
       ? []
       : await prisma.trade.findMany({
           where: whereTrade,
-          orderBy: {
-            openedAt: "desc",
-          },
+          orderBy: { openedAt: "desc" },
           skip: startIdx,
           take: PAGE_SIZE,
         });
 
   // botId -> botName 매핑
   const botNameMap: Record<string, string> = {};
-  for (const b of myBots) {
-    botNameMap[b.id] = b.name;
-  }
+  for (const b of myBots) botNameMap[b.id] = b.name;
 
-  // rows 직렬화
+  // rows 직렬화 (✅ realizedRoiPct 포함, ✅ exchange 칼럼 사용)
   const rows = trades.map((t) => {
     return {
       botId: t.botId,
       botName: botNameMap[t.botId] ?? "",
 
-      // 거래소 (예: "gateio", "websea")
-      exchange: t.exchangeMarketId ?? "-",
+      // 사람이 읽는 거래소명 (예: "gateio", "websea")
+      exchange: t.exchange ?? "-", // ← 필요 시 exchangeMarketId로 바꾸세요.
 
-      // 심볼은 그대로
       symbol: t.symbol,
-
       side: t.side,
       leverage: t.leverage,
       status: t.status,
 
-      entryQty: t.entryQty,
+      // 프론트 요구사항에 맞춰 entryQty는 내려줘도 무해하지만, 생략 가능
+      // entryQty: t.entryQty,
+
       entryPrice: t.entryPrice ? t.entryPrice.toString() : null,
       entryCostUsdt: t.entryCostUsdt ? t.entryCostUsdt.toString() : null,
       entryNotionalUsdt: t.entryNotionalUsdt
@@ -173,15 +142,15 @@ export async function GET(req: NextRequest) {
         : null,
       closedAt: t.closedAt ? t.closedAt.toISOString() : null,
 
-      // ✅ 추가: 실현 손익 USDT
+      // ✅ 실현 손익 USDT
       profitUsdt: t.realizedPnlUsdt ? t.realizedPnlUsdt.toString() : null,
+
+      // ✅ 실현 ROI(%)
+      realizedRoiPct: t.realizedRoiPct ? t.realizedRoiPct.toString() : null,
     };
   });
 
-  const botsForSelect = myBots.map((b) => ({
-    botId: b.id,
-    botName: b.name,
-  }));
+  const botsForSelect = myBots.map((b) => ({ botId: b.id, botName: b.name }));
 
   return NextResponse.json({
     ok: true,

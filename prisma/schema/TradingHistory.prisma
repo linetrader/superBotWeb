@@ -26,9 +26,12 @@ model Trade {
   id String @id
 
   // 원래 FK였던 값들, 이제 단순 스칼라
-  botId               String
-  exchangeMarketId    String?
+  botId                String
+  exchangeMarketId     String?
   exchangeCredentialId String?
+
+  // 거래소 (예: "gateio", "websea")
+  exchange             String
 
   // 포지션 메타
   symbol     String
@@ -61,6 +64,7 @@ model Trade {
   @@index([botId, status, openedAt])
   @@index([exchangeCredentialId, openedAt])
   @@index([exchangeMarketId, status, closedAt])
+  @@index([exchange, openedAt])
 }
 
 model TradeEvent {
@@ -92,9 +96,15 @@ model TradeEvent {
   realizedPnlUsdt Decimal? @db.Decimal(38,18)
   realizedRoiPct  Decimal? @db.Decimal(38,18)
 
+  // 거래소 원본 히스토리의 order_id
+  // Gate.io: response.order_id
+  // WebSea:  result[].order_id
+  orderId String?
+
   createdAt DateTime @default(now())
 
   @@index([tradeId, timestamp])
   @@index([botId, exchangeMarketId, timestamp])
   @@index([type, timestamp])
+  @@index([orderId, timestamp])
 }

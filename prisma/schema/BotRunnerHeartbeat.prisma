@@ -1,0 +1,13 @@
+model BotRunnerHeartbeat {
+  botId     String
+  workerId  String
+  runId     String      // 프로세스 내 해당 runner 인스턴스 식별자(UUID 등)
+  hostname  String?     // 선택
+  pid       Int?        // 선택
+  tickAt    DateTime    @updatedAt
+  createdAt DateTime    @default(now())
+
+  @@id([botId, workerId, runId])
+  @@index([botId, tickAt])
+  @@index([tickAt])
+}

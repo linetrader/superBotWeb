@@ -42,9 +42,19 @@ export function useProcessList(): UseProcessListReturn {
   // 선택된 process rows
   const [selected, setSelected] = useState<Record<string, boolean>>({});
 
+  // 현재 선택된 프로세스 ID들
   const idsSelected = useMemo(() => {
     return Object.keys(selected).filter((id) => selected[id]);
   }, [selected]);
+
+  // 현재 페이지 rows 중 STALE(alive === false) 대상으로 가능한 삭제 수(표시용)
+  const staleDeletableIdsThisPage = useMemo(() => {
+    return rows.filter((r) => r.alive === false).map((r) => r.id);
+  }, [rows]);
+
+  const staleDeletableCount = useMemo(() => {
+    return staleDeletableIdsThisPage.length;
+  }, [staleDeletableIdsThisPage]);
 
   const setAliveFilter = useCallback((f: AliveFilter) => {
     setAliveFilterState(f);
@@ -113,7 +123,7 @@ export function useProcessList(): UseProcessListReturn {
       } else {
         setRows(parsed.data);
         setTotal(parsed.total);
-        // keep selection as-is intentionally
+        // 선택 상태는 유지
       }
     } catch {
       const msg = "FETCH_FAILED";
@@ -135,7 +145,7 @@ export function useProcessList(): UseProcessListReturn {
     fetchList();
   }, [fetchList]);
 
-  // 기존 bulk delete (STALE만)
+  // 선택삭제 가능 여부: 선택된 것들이 모두 STALE인지 확인
   const canDeleteSelected = useMemo(() => {
     if (idsSelected.length === 0) {
       return false;
@@ -146,6 +156,7 @@ export function useProcessList(): UseProcessListReturn {
       .every((r) => r.alive === false);
   }, [idsSelected, rows]);
 
+  // [선택삭제] - 기존과 동일
   const deleteSelected = useCallback(async () => {
     if (!canDeleteSelected || idsSelected.length === 0) {
       toast({
@@ -191,8 +202,50 @@ export function useProcessList(): UseProcessListReturn {
   }, [canDeleteSelected, idsSelected, toast, clearSelection, fetchList]);
 
   /**
-   * 특정 workerId가 현재 붙잡고 있는 봇들을 모두 STOP시키도록
-   * /api/admin/process/[workerId]/stop-all POST 호출
+   * [전체 STALE 삭제]
+   * - 페이지/선택 무관
+   * - 서버에서 접근 가능한 모든 STALE 워커를 조회 후 삭제
+   * - payload: { deleteAllStale: true }
+   */
+  const deleteAllStale = useCallback(async () => {
+    setDeleting(true);
+
+    try {
+      const res = await fetch(`/api/admin/process/list`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          deleteAllStale: true,
+        }),
+      });
+
+      const json = (await res.json()) as unknown;
+      const parsed: BulkDeleteResponse = parseBulkDeleteResponse(json);
+
+      if (!parsed.ok) {
+        const msg = parsed.error ?? "UNKNOWN_ERROR";
+        toast({
+          variant: "error",
+          description: msg,
+        });
+      } else {
+        clearSelection();
+        fetchList();
+      }
+    } catch {
+      toast({
+        variant: "error",
+        description: "DELETE_ALL_STALE_FAILED",
+      });
+    } finally {
+      setDeleting(false);
+    }
+  }, [toast, clearSelection, fetchList]);
+
+  /**
+   * 특정 workerId가 가진 봇 전부 STOP 요청
    */
   const stopAllBotsForWorker = useCallback(
     async (workerId: string) => {
@@ -218,10 +271,8 @@ export function useProcessList(): UseProcessListReturn {
             description: msg,
           });
         } else {
-          // 성공 케이스: 몇 개 요청 들어갔는지 알려주기
           const stoppedCount = parsed.data.stoppedOkIds.length;
           toast({
-            // 성공 토스트는 error variant 아님
             description: `정지 요청 완료 (${stoppedCount} bots)`,
           });
           // 상태 갱신
@@ -266,6 +317,9 @@ export function useProcessList(): UseProcessListReturn {
       deleting,
       deleteSelected,
 
+      staleDeletableCount,
+      deleteAllStale,
+
       stopLoadingMap,
       stopAllBotsForWorker,
 
@@ -287,6 +341,8 @@ export function useProcessList(): UseProcessListReturn {
       clearSelection,
       deleting,
       deleteSelected,
+      staleDeletableCount,
+      deleteAllStale,
       stopLoadingMap,
       stopAllBotsForWorker,
       refresh,
