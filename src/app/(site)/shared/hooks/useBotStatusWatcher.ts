@@ -18,19 +18,28 @@ type WaitResult =
   | { ok: true }
   | { ok: false; reason: "timeout" | "cancelled" | "not_found" | "unknown" };
 
-const POLL_INTERVAL_MS = 600;
-// ⬇︎ 여유를 넉넉히 주세요 (워커 부하/거래소 응답 지연 고려)
-const TIMEOUT_MS_START = 45_000; // ← 15s → 45s
+// 기본 타임아웃(워커/거래소 지연 고려하여 넉넉히)
+const TIMEOUT_MS_START = 45_000;
 const TIMEOUT_MS_STOP = 45_000;
+
+// 적응형 폴링(초반 빠르게, 이후 느리게)
+const FAST_PHASE_MS = 5_000;
+const FAST_INTERVAL_MS = 300;
+const SLOW_INTERVAL_MS = 1_000;
 
 const sleep = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms));
 
-// ✅ RAW 상태를 그대로 반영
+function nextInterval(startedAtMs: number): number {
+  const elapsed = Date.now() - startedAtMs;
+  return elapsed <= FAST_PHASE_MS ? FAST_INTERVAL_MS : SLOW_INTERVAL_MS;
+}
+
+// ✅ 서버가 내려줄 수 있는 RAW 상태를 그대로 반영(과도기 포함)
 type Raw = "STOPPED" | "STARTING" | "RUNNING" | "STOPPING" | "ERROR";
 function uiFromRow(b: BotRow): BotStatus | Raw {
   const raw = (b as { statusRaw?: Raw }).statusRaw;
-  if (raw) return raw; // RUNNING/STOPPED/STARTING/STOPPING/ERROR 그대로
+  if (raw) return raw;
   return b.status ?? "UNKNOWN";
 }
 
@@ -47,7 +56,7 @@ export function useBotStatusWatcher(args: UseBotStatusWatcherArgs) {
   useEffect(() => {
     return () => {
       unmountedRef.current = true;
-      // 언마운트=취소로 보지 않습니다.
+      // 언마운트는 취소로 간주하지 않음(unknown 반환)
     };
   }, []);
 
@@ -58,13 +67,13 @@ export function useBotStatusWatcher(args: UseBotStatusWatcherArgs) {
           const one = await getBotById(id);
           if (one) return one;
         } catch {
-          /* ignore and fallback */
+          /* fallback below */
         }
       }
       try {
         await loadBots();
       } catch {
-        /* ignore */
+        /* ignore network error here */
       }
       const bots = getBotsSnapshot();
       return bots.find((b) => b.id === id) ?? null;
@@ -72,14 +81,12 @@ export function useBotStatusWatcher(args: UseBotStatusWatcherArgs) {
     [getBotById, getBotsSnapshot, loadBots]
   );
 
-  // ✅ 목표 상태에 대한 "도달" 판정 함수를 도입
+  // 목표 상태 도달 판정: RUNNING 목표면 STARTING도 성공으로 간주 / STOPPED 목표면 STOPPING도 성공
   function reachedTarget(target: BotStatus, current: BotStatus | Raw): boolean {
     if (target === "RUNNING") {
-      // RUNNING까지 가는 과정의 STARTING도 성공으로 인정
       return current === "RUNNING" || current === "STARTING";
     }
     if (target === "STOPPED") {
-      // STOPPING → STOPPED 과도기 허용
       return current === "STOPPED" || current === "STOPPING";
     }
     return false;
@@ -89,12 +96,11 @@ export function useBotStatusWatcher(args: UseBotStatusWatcherArgs) {
     async (
       id: string,
       target: BotStatus,
-      timeoutMs = TIMEOUT_MS_START,
-      intervalMs = POLL_INTERVAL_MS
+      timeoutMs: number
     ): Promise<WaitResult> => {
       const startedAt = Date.now();
 
-      // 첫 샷
+      // 첫 조회
       let bot = await fetchOne(id);
       if (!bot) return { ok: false, reason: "not_found" };
       if (reachedTarget(target, uiFromRow(bot))) return { ok: true };
@@ -104,7 +110,7 @@ export function useBotStatusWatcher(args: UseBotStatusWatcherArgs) {
         if (Date.now() - startedAt >= timeoutMs)
           return { ok: false, reason: "timeout" };
 
-        await sleep(intervalMs);
+        await sleep(nextInterval(startedAt));
         if (unmountedRef.current) return { ok: false, reason: "unknown" };
 
         bot = await fetchOne(id);
@@ -132,15 +138,10 @@ export function useBotStatusWatcher(args: UseBotStatusWatcherArgs) {
         return { ok: false, reason: "unknown" };
       }
 
-      const res = await pollUntil(
-        id,
-        "RUNNING",
-        TIMEOUT_MS_START,
-        POLL_INTERVAL_MS
-      );
+      const res = await pollUntil(id, "RUNNING", TIMEOUT_MS_START);
 
       try {
-        await loadBots();
+        await loadBots(); // 최종 동기화(화면 일관성)
       } catch {
         /* ignore */
       }
@@ -170,12 +171,7 @@ export function useBotStatusWatcher(args: UseBotStatusWatcherArgs) {
         return { ok: false, reason: "unknown" };
       }
 
-      const res = await pollUntil(
-        id,
-        "STOPPED",
-        TIMEOUT_MS_STOP,
-        POLL_INTERVAL_MS
-      );
+      const res = await pollUntil(id, "STOPPED", TIMEOUT_MS_STOP);
 
       try {
         await loadBots();

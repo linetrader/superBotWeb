@@ -17,9 +17,8 @@ type UseBotsArgs = {
   strategiesEndpoint?: string;
   botsEndpoint?: string;
 
-  // 컨트롤 엔드포인트 (시작/정지)
-  startEndpoint?: string; // default: "/api/bot-control/start"
-  stopEndpoint?: string; // default: "/api/bot-control/stop"
+  /** 단일 컨트롤 엔드포인트 (START/STOP 공용) */
+  controlEndpoint?: string; // default: "/api/bot-control"
 };
 
 type ApiEnvelope<T> = {
@@ -31,6 +30,10 @@ type ApiEnvelope<T> = {
 
 type DeleteResult = { ok: boolean; error?: string };
 
+type StartStopBody =
+  | { id: string; action: "START" }
+  | { id: string; action: "STOP" };
+
 export function useBots(args?: UseBotsArgs) {
   const { toast } = useToast();
 
@@ -40,8 +43,8 @@ export function useBots(args?: UseBotsArgs) {
     args?.strategiesEndpoint ?? "/api/bot-config/strategy-configs";
   const botsEndpoint = args?.botsEndpoint ?? "/api/bot-config/bots";
 
-  const startEndpoint = args?.startEndpoint ?? "/api/bot-control/start";
-  const stopEndpoint = args?.stopEndpoint ?? "/api/bot-control/stop";
+  // ✅ 단일 컨트롤 엔드포인트
+  const controlEndpoint = args?.controlEndpoint ?? "/api/bot-control";
 
   // 거래소/마켓 메타
   const {
@@ -115,39 +118,41 @@ export function useBots(args?: UseBotsArgs) {
     void loadBots();
   }, [loadBots]);
 
-  // 시작/정지
+  // ✅ 단일 엔드포인트로 시작/정지
   const startBot = useCallback(
     async (id: string) => {
       try {
-        await postJson<{ id: string }, unknown>(startEndpoint, { id });
-        toast({ title: "시작", description: "봇을 시작했습니다." });
+        const body: StartStopBody = { id, action: "START" };
+        await postJson<StartStopBody, unknown>(controlEndpoint, body);
+        toast({ title: "시작", description: "봇을 시작 요청했습니다." });
         await loadBots();
       } catch {
         toast({
           title: "시작 실패",
-          description: "봇 시작 중 오류.",
+          description: "봇 시작 요청 중 오류가 발생했습니다.",
           variant: "error",
         });
       }
     },
-    [startEndpoint, loadBots, toast]
+    [controlEndpoint, loadBots, toast]
   );
 
   const stopBot = useCallback(
     async (id: string) => {
       try {
-        await postJson<{ id: string }, unknown>(stopEndpoint, { id });
-        toast({ title: "정지", description: "봇을 정지했습니다." });
+        const body: StartStopBody = { id, action: "STOP" };
+        await postJson<StartStopBody, unknown>(controlEndpoint, body);
+        toast({ title: "정지", description: "봇을 정지 요청했습니다." });
         await loadBots();
       } catch {
         toast({
           title: "정지 실패",
-          description: "봇 정지 중 오류.",
+          description: "봇 정지 요청 중 오류가 발생했습니다.",
           variant: "error",
         });
       }
     },
-    [stopEndpoint, loadBots, toast]
+    [controlEndpoint, loadBots, toast]
   );
 
   // 선택 및 삭제 상태

@@ -78,12 +78,17 @@ export function useHomeBots(): HomeViewState {
   }, [loadBots]);
 
   const startBot = useCallback(async (id: string) => {
-    await postJson<{ id: string }, unknown>("/api/bot-control/start", { id });
-    // 실제 상태 전이 확인은 폴링/단건조회로 처리
+    await postJson<{ id: string; action: "START" }, unknown>(
+      "/api/bot-control",
+      { id, action: "START" }
+    );
   }, []);
 
   const stopBot = useCallback(async (id: string) => {
-    await postJson<{ id: string }, unknown>("/api/bot-control/stop", { id });
+    await postJson<{ id: string; action: "STOP" }, unknown>(
+      "/api/bot-control",
+      { id, action: "STOP" }
+    );
   }, []);
 
   // 단건 조회: /api/bot-config/bots/[id]

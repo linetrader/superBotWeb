@@ -1,3 +1,4 @@
+// src/app/api/(site)/bot-config/bots/route.ts
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getUserId } from "@/lib/request-user";

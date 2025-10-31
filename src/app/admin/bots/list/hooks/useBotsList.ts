@@ -3,8 +3,18 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { UseBotsListReturn, BotRow, RunningFilter } from "../types";
-import { parseBulkUpdate, parseList } from "../gaurd/bots";
+import { parseList } from "../gaurd/bots";
 import { useToast } from "@/components/ui";
+
+/** 통합 제어 API 요청 payload */
+type ControlPayload = {
+  id: string;
+  action: "START" | "STOP";
+};
+/** 통합 제어 API 응답 형태 */
+type ControlResponseOk = { ok: true; workItem?: { id?: string } | null };
+type ControlResponseErr = { ok: false; error: string; detail?: unknown };
+type ControlResponse = ControlResponseOk | ControlResponseErr;
 
 export function useBotsList(): UseBotsListReturn {
   const { toast } = useToast();
@@ -38,7 +48,6 @@ export function useBotsList(): UseBotsListReturn {
   /**
    * 서버 목록 조회
    * GET /api/admin/bots/list?page=&pageSize=&running=&username=
-   * username에는 usernameFilter 사용 (usernameInput 아님)
    */
   const fetchList = useCallback(async () => {
     setLoading(true);
@@ -81,68 +90,72 @@ export function useBotsList(): UseBotsListReturn {
     }
   }, [toast, page, pageSize, runningFilter, usernameFilter]);
 
-  /**
-   * page / runningFilter / usernameFilter 가 바뀔 때만 목록을 새로 호출
-   * usernameInput 변경만으로는 호출되지 않는다.
-   */
+  // page / runningFilter / usernameFilter 변경 시만 호출
   useEffect(() => {
     fetchList();
   }, [fetchList]);
 
-  /**
-   * rows가 바뀌면 선택 초기화
-   */
+  // rows 변경 시 선택 초기화
   useEffect(() => {
     setSelected({});
   }, [rows]);
 
-  /**
-   * 수동 새로고침
-   */
   const refresh = useCallback(() => {
     fetchList();
   }, [fetchList]);
 
-  /**
-   * 단일 선택 토글
-   */
   const toggleOne = useCallback((botId: string) => {
     setSelected((prev) => ({ ...prev, [botId]: !prev[botId] }));
   }, []);
 
-  /**
-   * 현재 rows 기준 전체 선택/해제
-   */
   const toggleAll = useCallback(
     (checked: boolean) => {
       setSelected(() => {
         const next: Record<string, boolean> = {};
-        for (const r of rows) {
-          next[r.id] = checked;
-        }
+        for (const r of rows) next[r.id] = checked;
         return next;
       });
     },
     [rows]
   );
 
-  /**
-   * 선택 비우기
-   */
   const clearSelection = useCallback(() => {
     setSelected({});
   }, []);
 
-  /**
-   * 선택된 bot id 배열
-   */
   const idsSelected = useMemo<string[]>(
     () => Object.keys(selected).filter((k) => selected[k]),
     [selected]
   );
 
   /**
+   * 공통 호출기: 통합 API /api/bot-control (Route Group은 URL에 포함 X)
+   */
+  const callBotControl = useCallback(
+    async (payload: ControlPayload): Promise<ControlResponse> => {
+      try {
+        const res = await fetch("/api/bot-control", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload satisfies ControlPayload),
+        });
+        const json = (await res.json()) as ControlResponse;
+        // 상태코드가 200이 아니어도 서버는 {ok:false,...}를 줄 수 있음
+        if (json && typeof (json as { ok?: unknown }).ok === "boolean") {
+          return json as ControlResponse;
+        }
+        return { ok: false, error: "INVALID_RESPONSE" };
+      } catch {
+        return { ok: false, error: "NETWORK_ERROR" };
+      }
+    },
+    []
+  );
+
+  /**
    * 일괄 START
+   * - Promise.allSettled 로 병렬 처리
+   * - 결과 요약 토스트
    */
   const startSelected = useCallback(async () => {
     if (idsSelected.length === 0) {
@@ -151,41 +164,47 @@ export function useBotsList(): UseBotsListReturn {
     }
     setStarting(true);
     try {
-      const res = await fetch("/api/admin/bots/list", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "START", botIds: idsSelected }),
-      });
-      const json = await res.json();
-      const parsed = parseBulkUpdate(json);
+      const results = await Promise.allSettled(
+        idsSelected.map((id) => callBotControl({ id, action: "START" }))
+      );
 
-      if (!parsed.ok) {
-        toast({
-          title: "시작 실패",
-          description: parsed.error,
-          variant: "error",
-        });
-      } else {
-        toast({
-          title: "시작 요청 완료",
-          description: `${parsed.data.updated}개 봇 START_BOT enqueued`,
-        });
-        clearSelection();
-        fetchList();
-      }
-    } catch {
-      toast({
-        title: "네트워크 오류",
-        description: "시작 중 오류가 발생했습니다.",
-        variant: "error",
+      let okCount = 0;
+      const fails: Array<{ id: string; reason: string }> = [];
+
+      results.forEach((r, idx) => {
+        const id = idsSelected[idx]!;
+        if (r.status === "fulfilled") {
+          const v = r.value;
+          if (v.ok) okCount += 1;
+          else fails.push({ id, reason: v.error });
+        } else {
+          fails.push({ id, reason: "REQUEST_REJECTED" });
+        }
       });
+
+      toast({
+        title: "시작 요청 결과",
+        description: `성공 ${okCount} / 실패 ${fails.length}`,
+        variant: fails.length ? "success" : "warning",
+      });
+
+      if (fails.length) {
+        // 실패케이스를 콘솔에 남겨 디버깅 가능하도록
+        // (UI에 모두 보여주면 길어질 수 있음)
+        // eslint-disable-next-line no-console
+        console.warn("[startSelected] fails:", fails);
+      }
+
+      clearSelection();
+      fetchList();
     } finally {
       setStarting(false);
     }
-  }, [idsSelected, toast, clearSelection, fetchList]);
+  }, [idsSelected, toast, callBotControl, clearSelection, fetchList]);
 
   /**
    * 일괄 STOP
+   * - STOP은 열린 STOP 중복 차단 로직이 서버에 있음
    */
   const stopSelected = useCallback(async () => {
     if (idsSelected.length === 0) {
@@ -194,72 +213,59 @@ export function useBotsList(): UseBotsListReturn {
     }
     setStopping(true);
     try {
-      const res = await fetch("/api/admin/bots/list", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "STOP", botIds: idsSelected }),
-      });
-      const json = await res.json();
-      const parsed = parseBulkUpdate(json);
+      const results = await Promise.allSettled(
+        idsSelected.map((id) => callBotControl({ id, action: "STOP" }))
+      );
 
-      if (!parsed.ok) {
-        toast({
-          title: "종료 실패",
-          description: parsed.error,
-          variant: "error",
-        });
-      } else {
-        toast({
-          title: "종료 요청 완료",
-          description: `${parsed.data.updated}개 봇 STOP_BOT enqueued`,
-        });
-        clearSelection();
-        fetchList();
-      }
-    } catch {
-      toast({
-        title: "네트워크 오류",
-        description: "종료 중 오류가 발생했습니다.",
-        variant: "error",
+      let okCount = 0;
+      const fails: Array<{ id: string; reason: string }> = [];
+
+      results.forEach((r, idx) => {
+        const id = idsSelected[idx]!;
+        if (r.status === "fulfilled") {
+          const v = r.value;
+          if (v.ok) okCount += 1;
+          else fails.push({ id, reason: v.error });
+        } else {
+          fails.push({ id, reason: "REQUEST_REJECTED" });
+        }
       });
+
+      toast({
+        title: "종료 요청 결과",
+        description: `성공 ${okCount} / 실패 ${fails.length}`,
+        variant: fails.length ? "success" : "warning",
+      });
+
+      if (fails.length) {
+        // eslint-disable-next-line no-console
+        console.warn("[stopSelected] fails:", fails);
+      }
+
+      clearSelection();
+      fetchList();
     } finally {
       setStopping(false);
     }
-  }, [idsSelected, toast, clearSelection, fetchList]);
+  }, [idsSelected, toast, callBotControl, clearSelection, fetchList]);
 
-  /**
-   * 러닝상태 필터 변경 시 page=1로 초기화
-   */
+  // 러닝상태 필터 변경 시 page=1
   const setRunningFilter = useCallback((f: RunningFilter) => {
     setRunningFilterState(f);
     setPage(1);
   }, []);
 
-  /**
-   * username 인풋(onChange) 상태 업데이트
-   * 이건 fetch를 유발하지 않는다.
-   */
+  // username 인풋(onChange)
   const setUsernameInput = useCallback((v: string) => {
     setUsernameInputState(v);
   }, []);
 
-  /**
-   * "검색" 버튼 클릭 시:
-   * - 실제 필터값(usernameFilterState)을 usernameInput으로 갱신
-   * - page=1로 초기화
-   * 이 변경이 일어나면 useEffect(fetchList) 가 돌면서 서버 호출됨.
-   */
+  // "검색" 클릭 시 실제 필터값 반영 + page=1
   const applyUsernameFilter = useCallback(() => {
-    setUsernameFilterState(() => {
-      // prevCurrent는 기존 서버 적용값. 우리는 항상 usernameInput으로 교체
-      return usernameInput;
-    });
+    setUsernameFilterState(() => usernameInput);
     setPage(1);
   }, [usernameInput]);
 
-  /**
-   * 훅 결과(뷰에서 그대로 props로 쓴다)
-   */
   const value: UseBotsListReturn = useMemo(
     () => ({
       loading,
