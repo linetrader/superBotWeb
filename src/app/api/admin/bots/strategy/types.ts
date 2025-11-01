@@ -1,3 +1,4 @@
+// src/app/api/admin/bots/strategy/types.ts
 export type StrategyGlobal = {
   id: string;
   bbw_thresh: number;

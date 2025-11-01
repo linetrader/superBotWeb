@@ -16,7 +16,7 @@ export function useStrategy(): UseStrategyReturn {
   const [history, setHistory] = useState<UseStrategyReturn["history"]>([]);
 
   const [form, setForm] = useState<UseStrategyReturn["form"]>({
-    bbw_thresh: "0.015",
+    bbw_thresh: "100.0",
     bb_period: "20",
     bb_k: "2.0",
     trend_fast: "12",

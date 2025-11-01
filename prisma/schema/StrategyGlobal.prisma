@@ -1,7 +1,7 @@
 // prisma/schema/StrategyGlobal.prisma
 model StrategyGlobalSettings {
   id         String   @id @default(cuid())
-  bbw_thresh Decimal  @db.Decimal(8, 6)
+  bbw_thresh Decimal  @db.Decimal(12, 6)
   bb_period  Int
   bb_k       Decimal  @db.Decimal(5, 2)
   trend_fast Int
@@ -22,7 +22,7 @@ model StrategyGlobalSettingsHistory {
   id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   settings_id String
 
-  bbw_thresh  Decimal  @db.Decimal(8, 6)
+  bbw_thresh  Decimal  @db.Decimal(12, 6)
   bb_period   Int
   bb_k        Decimal  @db.Decimal(5, 2)
   trend_fast  Int
