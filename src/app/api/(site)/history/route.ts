@@ -4,7 +4,7 @@ import prisma from "@/lib/prisma";
 import { getUserId } from "@/lib/request-user";
 import { Prisma } from "@/generated/prisma";
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 20;
 
 function toIntOrDefault(v: string | null, def: number): number {
   if (!v) return def;
@@ -102,7 +102,8 @@ export async function GET(req: NextRequest) {
       ? []
       : await prisma.trade.findMany({
           where: whereTrade,
-          orderBy: { openedAt: "desc" },
+          // 청산 시간 기준 최신순, 동률 시 진입 시간 최신순
+          orderBy: [{ closedAt: "desc" }, { id: "desc" }],
           skip: startIdx,
           take: PAGE_SIZE,
         });
@@ -111,41 +112,32 @@ export async function GET(req: NextRequest) {
   const botNameMap: Record<string, string> = {};
   for (const b of myBots) botNameMap[b.id] = b.name;
 
-  // rows 직렬화 (✅ realizedRoiPct 포함, ✅ exchange 칼럼 사용)
+  // rows 직렬화 (realizedRoiPct 포함, exchange 칼럼 사용)
   const rows = trades.map((t) => {
     return {
       botId: t.botId,
       botName: botNameMap[t.botId] ?? "",
-
       // 사람이 읽는 거래소명 (예: "gateio", "websea")
-      exchange: t.exchange ?? "-", // ← 필요 시 exchangeMarketId로 바꾸세요.
-
+      exchange: t.exchange ?? "-",
       symbol: t.symbol,
       side: t.side,
       leverage: t.leverage,
       status: t.status,
-
-      // 프론트 요구사항에 맞춰 entryQty는 내려줘도 무해하지만, 생략 가능
-      // entryQty: t.entryQty,
-
       entryPrice: t.entryPrice ? t.entryPrice.toString() : null,
       entryCostUsdt: t.entryCostUsdt ? t.entryCostUsdt.toString() : null,
       entryNotionalUsdt: t.entryNotionalUsdt
         ? t.entryNotionalUsdt.toString()
         : null,
       openedAt: t.openedAt.toISOString(),
-
       closeQty: t.closeQty ?? null,
       closePrice: t.closePrice ? t.closePrice.toString() : null,
       closeNotionalUsdt: t.closeNotionalUsdt
         ? t.closeNotionalUsdt.toString()
         : null,
       closedAt: t.closedAt ? t.closedAt.toISOString() : null,
-
-      // ✅ 실현 손익 USDT
+      // 실현 손익 USDT
       profitUsdt: t.realizedPnlUsdt ? t.realizedPnlUsdt.toString() : null,
-
-      // ✅ 실현 ROI(%)
+      // 실현 ROI(%)
       realizedRoiPct: t.realizedRoiPct ? t.realizedRoiPct.toString() : null,
     };
   });

@@ -57,6 +57,11 @@ model Trade {
 
   closedAt          DateTime?
 
+  // 거래소 원본 히스토리의 order_id
+  // Gate.io: response.order_id
+  // WebSea:  result[].order_id
+  orderId String?
+
   // 타임스탬프
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
