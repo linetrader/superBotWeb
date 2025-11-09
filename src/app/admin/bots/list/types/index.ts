@@ -44,6 +44,26 @@ export type BulkUpdateResponse = BulkUpdateOk | BulkUpdateErr;
 
 export type RunningFilter = "ALL" | "RUNNING" | "STOPPED" | "ERROR";
 
+/** 백업+전체종료 API 응답 */
+export type BackupStopOk = {
+  ok: true;
+  backupId: string;
+  count: number;
+  stopped: { updated: number; requested: number; eligible: number };
+};
+export type BackupStopErr = { ok: false; error: string };
+export type BackupStopResponse = BackupStopOk | BackupStopErr;
+
+/** 백업 복원(1초 텀 시작) API 응답 */
+export type RestoreStartOk = {
+  ok: true;
+  backupId: string;
+  total: number;
+  started: { updated: number; requested: number; eligible: number };
+};
+export type RestoreStartErr = { ok: false; error: string };
+export type RestoreStartResponse = RestoreStartOk | RestoreStartErr;
+
 export type UseBotsListReturn = {
   loading: boolean;
   error: string | null;
@@ -78,4 +98,10 @@ export type UseBotsListReturn = {
 
   // 실제 필터 적용 트리거 (검색 버튼)
   applyUsernameFilter: () => void;
+
+  // 백업/복원
+  backingUpStopping: boolean;
+  restoring: boolean;
+  backupAndStopAll: () => void;
+  restoreBackupStart: () => void;
 };

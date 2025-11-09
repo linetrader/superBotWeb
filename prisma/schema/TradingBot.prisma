@@ -22,6 +22,9 @@ model TradingBot {
   BotRuntime BotRuntime?
   workItems  WorkItem[]
 
+  // 백업 항목 역참조 (BotBackupItem -> TradingBot)
+  backupItems BotBackupItem[]
+
   // MULTI 전용 (A/B 그룹)
   groups     BotGroup[]
 

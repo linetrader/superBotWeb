@@ -19,6 +19,9 @@ model User {
   strategyConfigs     StrategyConfig[]
   tradingBots         TradingBot[]
 
+  // 백업 세트 역참조 (BotBackupSet -> User)
+  botBackupSets BotBackupSet[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

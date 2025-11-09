@@ -42,6 +42,12 @@ function HeaderControls(props: {
   usernameInput: string;
   setUsernameInput: (v: string) => void;
   applyUsernameFilter: () => void;
+
+  // 신규: 백업/복원
+  onBackupStop: () => void;
+  onRestoreStart: () => void;
+  backingUpStopping: boolean;
+  restoring: boolean;
 }) {
   const {
     allChecked,
@@ -56,6 +62,10 @@ function HeaderControls(props: {
     usernameInput,
     setUsernameInput,
     applyUsernameFilter,
+    onBackupStop,
+    onRestoreStart,
+    backingUpStopping,
+    restoring,
   } = props;
 
   return (
@@ -98,7 +108,6 @@ function HeaderControls(props: {
             placeholder="username 부분검색"
             value={usernameInput}
             onChange={(e) => {
-              // 타이핑 상태만 업데이트. 아직 fetch 안 함.
               setUsernameInput(e.currentTarget.value);
             }}
           />
@@ -113,6 +122,30 @@ function HeaderControls(props: {
       </div>
 
       <div className="flex items-center gap-2">
+        <button
+          className={`btn btn-outline btn-sm ${
+            backingUpStopping ? "btn-disabled" : ""
+          }`}
+          onClick={onBackupStop}
+          disabled={backingUpStopping}
+          title="현재 RUNNING 봇을 백업하고 모두 종료합니다"
+        >
+          {backingUpStopping ? "백업·종료 중..." : "백업 + 전체 종료"}
+        </button>
+
+        <button
+          className={`btn btn-outline btn-sm ${
+            restoring ? "btn-disabled" : ""
+          }`}
+          onClick={onRestoreStart}
+          disabled={restoring}
+          title="최근 백업을 기준으로 1초 간격으로 순차 시작"
+        >
+          {restoring ? "복원 시작 중..." : "백업 복원 시작"}
+        </button>
+
+        <div className="divider divider-horizontal m-0" />
+
         <button
           className={`btn btn-primary btn-sm ${starting ? "btn-disabled" : ""}`}
           onClick={onStart}
@@ -256,6 +289,10 @@ export default function ListView(props: UseBotsListReturn) {
     usernameInput,
     setUsernameInput,
     applyUsernameFilter,
+    backingUpStopping,
+    restoring,
+    backupAndStopAll,
+    restoreBackupStart,
   } = props;
 
   const router = useRouter();
@@ -279,6 +316,10 @@ export default function ListView(props: UseBotsListReturn) {
         usernameInput={usernameInput}
         setUsernameInput={setUsernameInput}
         applyUsernameFilter={applyUsernameFilter}
+        onBackupStop={backupAndStopAll}
+        onRestoreStart={restoreBackupStart}
+        backingUpStopping={backingUpStopping}
+        restoring={restoring}
       />
 
       {error && (

@@ -103,7 +103,7 @@ export async function GET(req: NextRequest) {
       : await prisma.trade.findMany({
           where: whereTrade,
           // 청산 시간 기준 최신순, 동률 시 진입 시간 최신순
-          orderBy: [{ closedAt: "desc" }, { id: "desc" }],
+          orderBy: [{ openedAt: "desc" }, { id: "desc" }],
           skip: startIdx,
           take: PAGE_SIZE,
         });

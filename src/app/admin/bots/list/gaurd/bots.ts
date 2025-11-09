@@ -7,6 +7,8 @@ import type {
   BulkUpdateResponse,
   ListResponse,
   RuntimeStatus,
+  BackupStopResponse,
+  RestoreStartResponse,
 } from "../types";
 
 export const RuntimeStatusSchema = z.union([
@@ -88,4 +90,54 @@ export function isBotRow(x: unknown): x is BotRow {
 
 export function isRuntimeStatus(x: unknown): x is RuntimeStatus {
   return RuntimeStatusSchema.safeParse(x).success;
+}
+
+/** Backup+Stop 파서 */
+const BackupStopOkSchema = z.object({
+  ok: z.literal(true),
+  backupId: z.string().min(1),
+  count: z.number().int().nonnegative(),
+  stopped: z.object({
+    updated: z.number().int().nonnegative(),
+    requested: z.number().int().nonnegative(),
+    eligible: z.number().int().nonnegative(),
+  }),
+});
+const BackupStopErrSchema = z.object({
+  ok: z.literal(false),
+  error: z.string(),
+});
+const BackupStopResponseSchema = z.union([
+  BackupStopOkSchema,
+  BackupStopErrSchema,
+]);
+export function parseBackupStop(json: unknown): BackupStopResponse {
+  const r = BackupStopResponseSchema.safeParse(json);
+  if (!r.success) return { ok: false, error: "INVALID_RESPONSE" };
+  return r.data;
+}
+
+/** Restore-Start 파서 */
+const RestoreStartOkSchema = z.object({
+  ok: z.literal(true),
+  backupId: z.string().min(1),
+  total: z.number().int().nonnegative(),
+  started: z.object({
+    updated: z.number().int().nonnegative(),
+    requested: z.number().int().nonnegative(),
+    eligible: z.number().int().nonnegative(),
+  }),
+});
+const RestoreStartErrSchema = z.object({
+  ok: z.literal(false),
+  error: z.string(),
+});
+const RestoreStartResponseSchema = z.union([
+  RestoreStartOkSchema,
+  RestoreStartErrSchema,
+]);
+export function parseRestoreStart(json: unknown): RestoreStartResponse {
+  const r = RestoreStartResponseSchema.safeParse(json);
+  if (!r.success) return { ok: false, error: "INVALID_RESPONSE" };
+  return r.data;
 }

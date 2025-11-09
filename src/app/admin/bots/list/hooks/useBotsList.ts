@@ -3,7 +3,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { UseBotsListReturn, BotRow, RunningFilter } from "../types";
-import { parseList } from "../gaurd/bots";
+import { parseList, parseBackupStop, parseRestoreStart } from "../gaurd/bots";
 import { useToast } from "@/components/ui";
 
 /** 통합 제어 API 요청 payload */
@@ -30,6 +30,10 @@ export function useBotsList(): UseBotsListReturn {
   // START/STOP 진행 상태
   const [starting, setStarting] = useState<boolean>(false);
   const [stopping, setStopping] = useState<boolean>(false);
+
+  // 백업/복원 상태
+  const [backingUpStopping, setBackingUpStopping] = useState<boolean>(false);
+  const [restoring, setRestoring] = useState<boolean>(false);
 
   // 페이지네이션
   const [page, setPage] = useState<number>(1);
@@ -129,7 +133,7 @@ export function useBotsList(): UseBotsListReturn {
   );
 
   /**
-   * 공통 호출기: 통합 API /api/bot-control (Route Group은 URL에 포함 X)
+   * 공통 호출기: 통합 API /api/bot-control
    */
   const callBotControl = useCallback(
     async (payload: ControlPayload): Promise<ControlResponse> => {
@@ -140,7 +144,6 @@ export function useBotsList(): UseBotsListReturn {
           body: JSON.stringify(payload satisfies ControlPayload),
         });
         const json = (await res.json()) as ControlResponse;
-        // 상태코드가 200이 아니어도 서버는 {ok:false,...}를 줄 수 있음
         if (json && typeof (json as { ok?: unknown }).ok === "boolean") {
           return json as ControlResponse;
         }
@@ -154,8 +157,6 @@ export function useBotsList(): UseBotsListReturn {
 
   /**
    * 일괄 START
-   * - Promise.allSettled 로 병렬 처리
-   * - 결과 요약 토스트
    */
   const startSelected = useCallback(async () => {
     if (idsSelected.length === 0) {
@@ -189,8 +190,6 @@ export function useBotsList(): UseBotsListReturn {
       });
 
       if (fails.length) {
-        // 실패케이스를 콘솔에 남겨 디버깅 가능하도록
-        // (UI에 모두 보여주면 길어질 수 있음)
         // eslint-disable-next-line no-console
         console.warn("[startSelected] fails:", fails);
       }
@@ -204,7 +203,6 @@ export function useBotsList(): UseBotsListReturn {
 
   /**
    * 일괄 STOP
-   * - STOP은 열린 STOP 중복 차단 로직이 서버에 있음
    */
   const stopSelected = useCallback(async () => {
     if (idsSelected.length === 0) {
@@ -266,6 +264,80 @@ export function useBotsList(): UseBotsListReturn {
     setPage(1);
   }, [usernameInput]);
 
+  /**
+   * 현재 RUNNING 봇 백업 후 전체 종료
+   * POST /api/admin/bots/backup-stop
+   */
+  const backupAndStopAll = useCallback(async () => {
+    setBackingUpStopping(true);
+    try {
+      const res = await fetch("/api/admin/bots/backup-stop", {
+        method: "POST",
+      });
+      const json = await res.json();
+      const parsed = parseBackupStop(json);
+      if (!parsed.ok) {
+        toast({
+          title: "백업/종료 실패",
+          description: parsed.error,
+          variant: "error",
+        });
+      } else {
+        toast({
+          title: "백업 완료 및 종료 요청",
+          description: `백업ID=${parsed.backupId}, 대상=${parsed.count}, 종료 성공=${parsed.stopped.updated}`,
+          variant: "success",
+        });
+      }
+      fetchList();
+    } catch {
+      toast({
+        title: "네트워크 오류",
+        description: "잠시 후 다시 시도하세요.",
+        variant: "error",
+      });
+    } finally {
+      setBackingUpStopping(false);
+    }
+  }, [toast, fetchList]);
+
+  /**
+   * 백업된 봇 복원 시작(1초 텀)
+   * POST /api/admin/bots/restore-start
+   */
+  const restoreBackupStart = useCallback(async () => {
+    setRestoring(true);
+    try {
+      const res = await fetch("/api/admin/bots/restore-start", {
+        method: "POST",
+      });
+      const json = await res.json();
+      const parsed = parseRestoreStart(json);
+      if (!parsed.ok) {
+        toast({
+          title: "복원 시작 실패",
+          description: parsed.error,
+          variant: "error",
+        });
+      } else {
+        toast({
+          title: "복원 시작",
+          description: `백업ID=${parsed.backupId}, 대상=${parsed.total}, 시작 성공=${parsed.started.updated}`,
+          variant: "success",
+        });
+      }
+      fetchList();
+    } catch {
+      toast({
+        title: "네트워크 오류",
+        description: "잠시 후 다시 시도하세요.",
+        variant: "error",
+      });
+    } finally {
+      setRestoring(false);
+    }
+  }, [toast, fetchList]);
+
   const value: UseBotsListReturn = useMemo(
     () => ({
       loading,
@@ -289,6 +361,10 @@ export function useBotsList(): UseBotsListReturn {
       usernameInput,
       setUsernameInput,
       applyUsernameFilter,
+      backingUpStopping,
+      restoring,
+      backupAndStopAll,
+      restoreBackupStart,
     }),
     [
       loading,
@@ -312,6 +388,10 @@ export function useBotsList(): UseBotsListReturn {
       usernameInput,
       setUsernameInput,
       applyUsernameFilter,
+      backingUpStopping,
+      restoring,
+      backupAndStopAll,
+      restoreBackupStart,
     ]
   );
 
