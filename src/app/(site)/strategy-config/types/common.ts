@@ -1,3 +1,4 @@
+// src/app/(site)/strategy-config/types/common.ts
 import { Timeframe, StrategyKind } from "@/generated/prisma";
 
 export type CommonFormSlice = {
@@ -10,6 +11,7 @@ export type CommonFormSlice = {
   defaultSize: string;
   maxSize: string;
   targetProfit: string;
+  targetLoss: string; // ✅ 추가
   leverage: string;
   timeframe: Timeframe;
 

@@ -1,3 +1,4 @@
+// src/app/(site)/strategy-config/hooks/useStrategyConfigsTable.ts
 "use client";
 
 import { useEffect, useMemo } from "react";

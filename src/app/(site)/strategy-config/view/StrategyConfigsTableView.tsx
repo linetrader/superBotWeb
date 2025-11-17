@@ -1,3 +1,4 @@
+// src/app/(site)/strategy-config/view/StrategyConfigsTableView.tsx
 "use client";
 
 import { ChangeEvent } from "react";

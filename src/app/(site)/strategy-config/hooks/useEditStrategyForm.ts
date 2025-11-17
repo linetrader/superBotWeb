@@ -1,3 +1,4 @@
+// src/app/(site)/strategy-config/hooks/useEditStrategyForm.ts
 "use client";
 
 import { useMemo, useState } from "react";
@@ -34,6 +35,7 @@ export function useEditStrategyForm(params: Params) {
       defaultSize: String(item.defaultSize),
       maxSize: String(item.maxSize),
       targetProfit: String(item.targetProfit),
+      targetLoss: String(item.targetLoss), // ✅ 추가
       leverage: String(item.leverage),
       timeframe: item.timeframe,
       rsiLength: String(item.rsiLength),
@@ -71,6 +73,7 @@ export function useEditStrategyForm(params: Params) {
       body.defaultSize = Number.parseInt(form.defaultSize, 10);
       body.maxSize = Number.parseInt(form.maxSize, 10);
       body.targetProfit = Number.parseFloat(form.targetProfit);
+      body.targetLoss = Number.parseFloat(form.targetLoss); // ✅ 추가
       body.leverage = Number.parseInt(form.leverage, 10);
       body.timeframe = form.timeframe;
       body.rsiLength = Number.parseInt(form.rsiLength, 10);

@@ -1,3 +1,4 @@
+// src/types/strategy-config/index.ts
 import { z } from "zod";
 import {
   StrategyKind as PrismaStrategyKind,
@@ -36,6 +37,7 @@ export const StrategyItemSchema = z.object({
   defaultSize: z.number().int(),
   maxSize: z.number().int(),
   targetProfit: z.number(),
+  targetLoss: z.number(), // ✅ 추가
   leverage: z.number().int(),
   timeframe: z.nativeEnum(Timeframe),
   enabled: z.boolean(),
@@ -72,6 +74,7 @@ export const StrategyCreateBodySchema = z
     defaultSize: z.number().int().optional(),
     maxSize: z.number().int().optional(),
     targetProfit: z.number().optional(),
+    targetLoss: z.number().optional(), // ✅ 추가
     leverage: z.number().int().optional(),
     timeframe: z.nativeEnum(Timeframe).optional(),
     enabled: z.boolean().optional(),
@@ -127,6 +130,7 @@ export const StrategyUpdateBodySchema = z.object({
   defaultSize: z.number().int().optional(),
   maxSize: z.number().int().optional(),
   targetProfit: z.number().optional(),
+  targetLoss: z.number().optional(), // ✅ 추가
   leverage: z.number().int().optional(),
   timeframe: z.nativeEnum(Timeframe).optional(),
   enabled: z.boolean().optional(),

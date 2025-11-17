@@ -1,3 +1,4 @@
+// src/app/(site)/strategy-config/types/table.ts
 import type { StrategyItem } from "@/types/strategy-config";
 
 export type StrategyRow = {

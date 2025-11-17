@@ -1,3 +1,4 @@
+// src/app/api/(site)/strategy-config/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { ZodError } from "zod";
 import { prisma } from "@/lib/prisma";
@@ -51,9 +52,11 @@ function formatKSTTimestamp(now: Date = new Date()): string {
   const S = (kt.second ?? "00").padStart(2, "0");
   return `${y}${m}${d}-${H}${M}${S}`;
 }
+
 function toStringOrEmpty(v: unknown): string {
   return typeof v === "string" ? v : "";
 }
+
 function ensureNonEmptyName(input: unknown): string {
   const t = toStringOrEmpty(input).trim();
   return t.length > 0 ? t : `strategy-${formatKSTTimestamp()}`;
@@ -63,9 +66,11 @@ function ensureNonEmptyName(input: unknown): string {
 function hasTrend(kind: StrategyKind): boolean {
   return kind === StrategyKind.TREND || kind === StrategyKind.BOTH;
 }
+
 function hasBox(kind: StrategyKind): boolean {
   return kind === StrategyKind.BOX || kind === StrategyKind.BOTH;
 }
+
 function parseKindParam(v: string | null): StrategyKind | undefined {
   if (v === "TREND") return StrategyKind.TREND;
   if (v === "BOX") return StrategyKind.BOX;
@@ -91,6 +96,7 @@ function buildCreateData(
     defaultSize: body.defaultSize ?? 0,
     maxSize: body.maxSize ?? 0,
     targetProfit: body.targetProfit ?? 0,
+    targetLoss: body.targetLoss ?? 0, // ✅ 추가
     leverage: body.leverage ?? 1,
     timeframe: body.timeframe,
     enabled: true, // ← 항상 true로 고정
@@ -143,6 +149,7 @@ function buildUpdateData(
     ...(body.targetProfit !== undefined
       ? { targetProfit: body.targetProfit }
       : {}),
+    ...(body.targetLoss !== undefined ? { targetLoss: body.targetLoss } : {}), // ✅ 추가
     ...(body.leverage !== undefined ? { leverage: body.leverage } : {}),
     ...(body.timeframe !== undefined ? { timeframe: body.timeframe } : {}),
     // enabled: true 를 강제 업데이트하지는 않음 (생성 시에 true), 필요시 주석 해제:
@@ -393,6 +400,7 @@ function mapRowToItem(r: StrategyConfigWithRelations): StrategyItem {
     defaultSize: r.defaultSize,
     maxSize: r.maxSize,
     targetProfit: r.targetProfit,
+    targetLoss: r.targetLoss, // ✅ 추가
     leverage: r.leverage,
     timeframe: r.timeframe,
     enabled: true, // 생성 시 true, 클라이언트 표시용 고정

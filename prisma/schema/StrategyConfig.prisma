@@ -13,6 +13,7 @@ model StrategyConfig {
   defaultSize          Int       @default(0)
   maxSize              Int       @default(0)
   targetProfit         Float     @default(0)
+  targetLoss           Float     @default(0)
   leverage             Int       @default(1)
   timeframe            Timeframe @default(T5m)
   enabled              Boolean   @default(true)

@@ -166,6 +166,7 @@ export default function BotConfigForm() {
                 <option value="XRPUSDT">XRPUSDT</option>
                 <option value="SOLUSDT">SOLUSDT</option>
                 <option value="DOGEUSDT">DOGEUSDT</option>
+                <option value="TRXUSDT">TRXUSDT</option>
               </select>
             </div>
 

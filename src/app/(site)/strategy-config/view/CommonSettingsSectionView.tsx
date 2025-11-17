@@ -112,16 +112,16 @@ export default function CommonSettingsSectionView({
           </select>
         </div>
 
-        {/* 목표 수익률 / 레버리지 */}
+        {/* 목표 수익률 / 손절 (%) */}
         <div className="form-control">
           <label className="label">
-            <span className="label-text">목표 수익률 / 레버리지 (%)</span>
+            <span className="label-text">목표 수익률 / 손절 (%)</span>
           </label>
           <div className="grid grid-cols-2 gap-2">
             <input
               id="target-profit"
               className="input input-bordered"
-              placeholder="실수"
+              placeholder="수익 % (실수)"
               inputMode="decimal"
               value={form.targetProfit}
               disabled={disabled}
@@ -130,17 +130,35 @@ export default function CommonSettingsSectionView({
               }
             />
             <input
-              id="leverage"
+              id="target-loss"
               className="input input-bordered"
-              placeholder="정수"
-              inputMode="numeric"
-              value={form.leverage}
+              placeholder="손절 % (실수)"
+              inputMode="decimal"
+              value={form.targetLoss}
               disabled={disabled}
               onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                setForm(() => ({ leverage: e.target.value }))
+                setForm(() => ({ targetLoss: e.target.value }))
               }
             />
           </div>
+        </div>
+
+        {/* 레버리지 */}
+        <div className="form-control">
+          <label htmlFor="leverage" className="label">
+            <span className="label-text">레버리지 (배)</span>
+          </label>
+          <input
+            id="leverage"
+            className="input input-bordered"
+            placeholder="정수"
+            inputMode="numeric"
+            value={form.leverage}
+            disabled={disabled}
+            onChange={(e: ChangeEvent<HTMLInputElement>) =>
+              setForm(() => ({ leverage: e.target.value }))
+            }
+          />
         </div>
 
         {/* 기본 수량 / 최대 수량 */}

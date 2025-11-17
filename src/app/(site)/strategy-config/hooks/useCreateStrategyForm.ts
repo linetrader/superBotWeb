@@ -1,3 +1,4 @@
+// src/app/(site)/strategy-config/hooks/useCreateStrategyForm.ts
 "use client";
 
 import { useState } from "react";
@@ -33,6 +34,7 @@ export function useCreateStrategyForm(params: Params) {
     defaultSize: "20",
     maxSize: "500",
     targetProfit: "20",
+    targetLoss: "5", // ✅ 예시 기본값
     leverage: "15",
     timeframe: Timeframe.T5m,
     rsiLength: "14",
@@ -59,6 +61,7 @@ export function useCreateStrategyForm(params: Params) {
       body.defaultSize = Number.parseInt(form.defaultSize, 10);
       body.maxSize = Number.parseInt(form.maxSize, 10);
       body.targetProfit = Number.parseFloat(form.targetProfit);
+      body.targetLoss = Number.parseFloat(form.targetLoss); // ✅ 추가
       body.leverage = Number.parseInt(form.leverage, 10);
       body.timeframe = form.timeframe;
       body.rsiLength = Number.parseInt(form.rsiLength, 10);
