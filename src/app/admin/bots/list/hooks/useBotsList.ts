@@ -190,7 +190,6 @@ export function useBotsList(): UseBotsListReturn {
       });
 
       if (fails.length) {
-        // eslint-disable-next-line no-console
         console.warn("[startSelected] fails:", fails);
       }
 
@@ -236,7 +235,6 @@ export function useBotsList(): UseBotsListReturn {
       });
 
       if (fails.length) {
-        // eslint-disable-next-line no-console
         console.warn("[stopSelected] fails:", fails);
       }
 

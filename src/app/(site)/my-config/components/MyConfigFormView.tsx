@@ -1,6 +1,7 @@
 // src/app/(site)/my-config/components/MyConfigFormView.tsx
 "use client";
 
+import type React from "react";
 import {
   Button,
   Checkbox,
@@ -8,8 +9,9 @@ import {
   LabeledField,
   SelectField,
 } from "@/components/ui";
-import { EXCHANGES, type ExchangeOption } from "@/types/options";
+//import { EXCHANGES, type ExchangeOption } from "@/app/_config/options";
 import type { UseMyConfigReturn } from "../hooks/useMyConfig";
+import { ExchangeOption, EXCHANGES } from "@/types/options";
 
 type Props = { vm: UseMyConfigReturn };
 
@@ -19,15 +21,25 @@ export function MyConfigFormView({ vm }: Props) {
     setForm,
     saving,
     deleting,
+    wallstLoggingIn,
     errorMsg,
     exchangeLabel,
     selectedIds,
     handleSave,
     handleDeleteSelected,
-    handleUidChange, // ✅ 추가
+    handleUidChange,
     handleApiKeyChange,
     handleApiSecretChange,
+    handleWallstUsernameChange,
+    handleWallstPasswordChange,
+    handleWallstLogin,
   } = vm;
+
+  const wallStExchange: ExchangeOption | undefined = EXCHANGES.find(
+    (ex: ExchangeOption) => ex.code === "WALLST"
+  );
+  const isWallStSelected: boolean =
+    wallStExchange !== undefined && form.exchangeId === wallStExchange.id;
 
   return (
     <div className="grid grid-cols-1 gap-3">
@@ -59,7 +71,49 @@ export function MyConfigFormView({ vm }: Props) {
         </SelectField>
       </LabeledField>
 
-      {/* ✅ UID 입력란 (API Key 위에 위치) */}
+      {isWallStSelected && (
+        <div className="mt-1 rounded-md border border-base-300 p-3">
+          <p className="mb-2 text-sm font-medium">wallST 계정 로그인</p>
+
+          <div className="grid grid-cols-1 gap-2">
+            <InputField
+              id="wallstUsername"
+              label="wallST 아이디"
+              value={form.wallstUsername}
+              placeholder="wallST 계정 아이디"
+              onChange={
+                handleWallstUsernameChange as React.ChangeEventHandler<HTMLInputElement>
+              }
+            />
+
+            <InputField
+              id="wallstPassword"
+              label="wallST 비밀번호"
+              type="password"
+              value={form.wallstPassword}
+              placeholder="wallST 계정 비밀번호"
+              onChange={
+                handleWallstPasswordChange as React.ChangeEventHandler<HTMLInputElement>
+              }
+            />
+
+            <div className="mt-1 flex items-center justify-between gap-2">
+              <p className="text-[11px] text-base-content/70">
+                로그인 후 발급받은 토큰이 API Key 에 자동 저장됩니다.
+              </p>
+              <Button
+                type="button"
+                size="sm"
+                disabled={wallstLoggingIn}
+                onClick={() => void handleWallstLogin()}
+              >
+                {wallstLoggingIn ? "로그인 중…" : "로그인 후 토큰 받기"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <InputField
         id="uid"
         label="거래소 UID"
@@ -70,9 +124,13 @@ export function MyConfigFormView({ vm }: Props) {
 
       <InputField
         id="apiKey"
-        label="API Key"
+        label={isWallStSelected ? "API Key (Bearer 토큰)" : "API Key"}
         value={form.apiKey}
-        placeholder="거래소 API Key"
+        placeholder={
+          isWallStSelected
+            ? "로그인 후 토큰이 여기 자동 입력됩니다."
+            : "거래소 API Key"
+        }
         onChange={
           handleApiKeyChange as React.ChangeEventHandler<HTMLInputElement>
         }
@@ -80,9 +138,15 @@ export function MyConfigFormView({ vm }: Props) {
 
       <InputField
         id="apiSecret"
-        label="API Secret"
+        label={
+          isWallStSelected ? "API Secret (wallST는 더미 값)" : "API Secret"
+        }
         value={form.apiSecret}
-        placeholder="거래소 API Secret"
+        placeholder={
+          isWallStSelected
+            ? "자동으로 더미 값이 채워집니다."
+            : "거래소 API Secret"
+        }
         onChange={
           handleApiSecretChange as React.ChangeEventHandler<HTMLInputElement>
         }

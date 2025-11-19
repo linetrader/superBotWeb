@@ -1,5 +1,4 @@
 // src/app/api/admin/bots/backup-stop/route.ts
-import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import { getUserId } from "@/lib/request-user";
 import { collectAllDownlineIds, controlBots } from "@/server/botControlService";
@@ -22,7 +21,7 @@ function jsonErr(status: number, error: string, detail?: unknown): Response {
   return Response.json({ ok: false, error, detail } as JsonErr, { status });
 }
 
-export async function POST(_req: NextRequest) {
+export async function POST() {
   try {
     const requesterId = await getUserId();
     if (!requesterId) return jsonErr(401, "UNAUTHORIZED");

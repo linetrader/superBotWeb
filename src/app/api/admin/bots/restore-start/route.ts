@@ -1,5 +1,4 @@
 // src/app/api/admin/bots/restore-start/route.ts
-import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import { getUserId } from "@/lib/request-user";
 import { controlBots, collectAllDownlineIds } from "@/server/botControlService";
@@ -30,7 +29,7 @@ function delayMs(ms: number): Promise<void> {
  * - 요청자(userId)의 가장 최근 BotBackupSet을 조회
  * - 그 세트에 포함된 botId들을 1초 간격으로 순차 START 큐잉
  */
-export async function POST(_req: NextRequest) {
+export async function POST() {
   const requesterId = await getUserId();
   if (!requesterId) return jsonErr(401, "UNAUTHORIZED");
 

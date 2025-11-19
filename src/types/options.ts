@@ -30,6 +30,7 @@ export type TimeframeEnum =
 export const EXCHANGES: ReadonlyArray<ExchangeOption> = [
   { id: "ex_gateio", code: "GATEIO", name: "Gate.io" },
   { id: "ex_websea", code: "WEBSEA", name: "WebSea" },
+  { id: "ex_wallst", code: "WALLST", name: "wallST" }, // ✅ wallST 추가
 ];
 
 export const MARKETS: ReadonlyArray<MarketOption> = [
@@ -61,6 +62,22 @@ export const MARKETS: ReadonlyArray<MarketOption> = [
     name: "WebSea Futures",
     restBaseUrl: "https://coapi.websea.com",
   },
+  {
+    id: "mkt_wallst_spot",
+    exchangeId: "ex_wallst",
+    code: "SPOT",
+    name: "wallST Spot",
+    // ⚠️ 실제 wallST Spot REST Base URL 로 교체 필요
+    restBaseUrl: "https://example.wallst.com/api/spot",
+  },
+  {
+    id: "mkt_wallst_futures",
+    exchangeId: "ex_wallst",
+    code: "FUTURES",
+    name: "wallST Futures",
+    // ⚠️ 실제 wallST Futures REST Base URL 로 교체 필요
+    restBaseUrl: "https://example.wallst.com/api/futures",
+  },
 ];
 
 export const SYMBOLS_BY_MARKET: Readonly<
@@ -79,6 +96,15 @@ export const SYMBOLS_BY_MARKET: Readonly<
     { value: "XRPUSDT", label: "XRP/USDT" },
   ],
   mkt_websea_futures: [
+    { value: "BTCUSDT", label: "BTC/USDT" },
+    { value: "ETHUSDT", label: "ETH/USDT" },
+  ],
+  // ⚠️ 아래 wallST 심볼은 예시 값. 실제 지원 심볼로 교체 필요
+  mkt_wallst_spot: [
+    { value: "BTCUSDT", label: "BTC/USDT" },
+    { value: "ETHUSDT", label: "ETH/USDT" },
+  ],
+  mkt_wallst_futures: [
     { value: "BTCUSDT", label: "BTC/USDT" },
     { value: "ETHUSDT", label: "ETH/USDT" },
   ],

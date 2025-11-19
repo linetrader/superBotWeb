@@ -1,13 +1,12 @@
 // src/app/(site)/my-config/services/myConfigApi.ts
-import type { PostBody } from "../types/index";
+import type { PostBody, WallstLoginRequest } from "../types/index";
 
 export function apiLoadHistory(): Promise<Response> {
-  return fetch("/api/my-config", { method: "GET" }); // ✅ 경로 통일
+  return fetch("/api/my-config", { method: "GET" });
 }
 
 export function apiSaveConfig(body: PostBody): Promise<Response> {
   return fetch("/api/my-config", {
-    // ✅ 경로 통일
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -18,9 +17,16 @@ export function apiDeleteByExchangeCode(
   exchangeCode: string
 ): Promise<Response> {
   return fetch("/api/my-config", {
-    // ✅ 경로 통일
     method: "DELETE",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ exchangeCode }),
+  });
+}
+
+export function apiWallstLogin(body: WallstLoginRequest): Promise<Response> {
+  return fetch("/api/wallst/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
   });
 }

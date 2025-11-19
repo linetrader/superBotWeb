@@ -1,4 +1,4 @@
-// src/app/api/(site)/my-config/route.ts
+// src/app/api/my-config/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { ZodError } from "zod";
 import { Prisma } from "@/generated/prisma";
@@ -104,7 +104,7 @@ export async function GET(): Promise<NextResponse> {
       id: r.id,
       exchangeCode: r.exchange.code,
       exchangeName: r.exchange.name,
-      uid: r.exchangeUid ?? undefined, // UID 포함 (레거시 null 보호)
+      uid: r.exchangeUid ?? undefined,
       createdAt: r.createdAt.toISOString(),
       updatedAt: r.updatedAt.toISOString(),
     }));
