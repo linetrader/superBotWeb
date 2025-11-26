@@ -3,8 +3,8 @@
 
 import { useEffect, useMemo } from "react";
 import { useToast } from "@/components/ui";
-import type { StrategyItem } from "@/types/strategy-config";
 import type { StrategyRow } from "../types/table";
+import { StrategyItem } from "../types";
 
 type Params = {
   items: StrategyItem[];
@@ -17,24 +17,45 @@ type Params = {
   error?: string;
 };
 
+function commonDetail(it: StrategyItem): string {
+  const rangeFlag = it.rangeFollowTrendOnly ? "range=trendOnly" : "range=both";
+  const reverseFlag = it.reverseEntryEnabled ? "rev=on" : "rev=off";
+  return [
+    `len:${it.rsiLength}`,
+    `ADX>=${it.adxConfirmThreshold}`,
+    `ATR>=${it.minAtrPct}%`,
+    `DC:${it.donchianLookback}`,
+    `ST:${it.supertrendPeriod}x${it.supertrendMult}`,
+    `slope>=${it.trendSlopeThresholdAbs}`,
+    `nearDC<=${it.donchianNearBreakPct}%`,
+    rangeFlag,
+    reverseFlag,
+  ].join(", ");
+}
+
 function detailText(it: StrategyItem): string {
+  const common = commonDetail(it);
+
   if (it.kind === "TREND") {
     const upper = it.trendRsiUpperPullback ?? "-";
     const lower = it.trendRsiLowerPullback ?? "-";
-    return `len:${it.rsiLength}, pullback U:${upper}/L:${lower}`;
+    return `TREND: ${common}, pullback U:${upper}/L:${lower}`;
   }
+
   if (it.kind === "BOX") {
     const low = it.lowerTh ?? "-";
     const up = it.upperTh ?? "-";
     const touch = it.boxTouchPct ?? "-";
-    return `RSI ${low}~${up}, touch:${touch}`;
+    return `BOX: RSI ${low}~${up}, touch:${touch} | ${common}`;
   }
+
+  // BOTH
   const low = it.lowerTh ?? "-";
   const up = it.upperTh ?? "-";
   const touch = it.boxTouchPct ?? "-";
   const upper = it.trendRsiUpperPullback ?? "-";
   const lower = it.trendRsiLowerPullback ?? "-";
-  return `BOX: ${low}~${up}, touch:${touch} | TREND: len:${it.rsiLength}, U:${upper}/L:${lower}`;
+  return `BOX: ${low}~${up}, touch:${touch} | TREND: U:${upper}/L:${lower} | ${common}`;
 }
 
 export function useStrategyConfigsTable(params: Params) {

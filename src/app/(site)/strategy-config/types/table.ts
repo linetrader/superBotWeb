@@ -1,5 +1,7 @@
 // src/app/(site)/strategy-config/types/table.ts
-import type { StrategyItem } from "@/types/strategy-config";
+//import type { StrategyItem } from "@/types/strategy-config";
+
+import { StrategyItem } from ".";
 
 export type StrategyRow = {
   idx: number;

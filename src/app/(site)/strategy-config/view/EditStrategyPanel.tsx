@@ -2,8 +2,8 @@
 "use client";
 
 import { useEditStrategyForm } from "../hooks/useEditStrategyForm";
+import { StrategyItem, StrategyUpdateBody } from "../types";
 import EditStrategyFormView from "./EditStrategyFormView";
-import type { StrategyItem, StrategyUpdateBody } from "@/types/strategy-config";
 
 type OuterProps = {
   editTarget: StrategyItem | null;
@@ -18,7 +18,6 @@ type InnerProps = {
 };
 
 function EditStrategyPanelInner({ item, onUpdate, onClose }: InnerProps) {
-  // ✅ 훅은 이 컴포넌트가 렌더될 때마다 항상 같은 순서로 호출됨
   const editHook = useEditStrategyForm({
     item,
     onUpdate,
@@ -42,7 +41,6 @@ export default function EditStrategyPanel({
   onUpdate,
   onClose,
 }: OuterProps) {
-  // ✅ 훅이 없는 곳에서만 조건부 처리
   if (editTarget === null) return null;
   return (
     <EditStrategyPanelInner

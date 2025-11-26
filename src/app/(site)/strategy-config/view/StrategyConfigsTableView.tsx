@@ -35,7 +35,9 @@ export default function StrategyConfigsTableView({
           <div className="flex gap-2">
             <button
               type="button"
-              className={`btn btn-primary btn-sm ${selectedCount === 0 ? "btn-disabled" : ""}`}
+              className={`btn btn-primary btn-sm ${
+                selectedCount === 0 ? "btn-disabled" : ""
+              }`}
               onClick={() => {
                 if (selectedCount === 0) return;
                 onDeleteSelected();

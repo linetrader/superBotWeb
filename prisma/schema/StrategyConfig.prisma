@@ -8,22 +8,42 @@ model StrategyConfig {
   kind      StrategyKind
 
   // 공통(유형과 무관)
-  useMartin            Boolean   @default(false)
-  martinMultiplier     Float     @default(1.0)
-  defaultSize          Int       @default(0)
-  maxSize              Int       @default(0)
-  targetProfit         Float     @default(0)
-  targetLoss           Float     @default(0)
-  leverage             Int       @default(1)
-  timeframe            Timeframe @default(T5m)
-  enabled              Boolean   @default(true)
-  rsiLength Int        @default(14)
+  useMartin        Boolean   @default(false)
+  martinMultiplier Float     @default(1.0)
+  defaultSize      Int       @default(0)
+  maxSize          Int       @default(0)
+  targetProfit     Float     @default(0)
+  targetLoss       Float     @default(0)
+  leverage         Int       @default(1)
+  timeframe        Timeframe @default(T5m)
+  enabled          Boolean   @default(true)
+  rsiLength        Int       @default(14)
 
-  // ... (기존 공통 필드들)
+  /// 🔽 추가
+  reverseEntryEnabled Boolean @default(false)
+
+  // ──────────────────────────────
+  // ✅ 시그널 확증/보조 파라미터 (공통)
+  // ──────────────────────────────
+  adxConfirmThreshold     Float  @default(25)
+  atrConfirmPeriod        Int    @default(14)
+  minAtrPct               Float  @default(1)
+
+  donchianLookback        Int    @default(20)
+  supertrendPeriod        Int    @default(10)
+  supertrendMult          Float  @default(3)
+
+  rangeFollowTrendOnly    Boolean @default(true)
+  rangeMinAtrMult         Float   @default(0)
+
+  trendSlopeWindow        Int     @default(30)
+  trendSlopeThresholdAbs  Float   @default(0.02)
+  donchianNearBreakPct    Float   @default(0.15)
+
+  // --- 전략별 서브모델 ---
   trend TrendStrategy?
   box   BoxStrategy?
 
-  // ✅ TradingBot 역방향(1:N) — 필수
   tradingBots TradingBot[]
 
   createdAt DateTime @default(now())

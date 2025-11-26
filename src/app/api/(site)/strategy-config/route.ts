@@ -4,19 +4,19 @@ import { ZodError } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getUserId } from "@/lib/request-user";
 import { Prisma, StrategyKind } from "@/generated/prisma";
+import { ErrorResponse } from "@/app/(site)/my-config/types";
 import {
+  StrategyConfigWithRelations,
+  StrategyCreateBody,
   StrategyCreateBodySchema,
-  StrategyUpdateBodySchema,
+  StrategyDeleteBody,
   StrategyDeleteBodySchema,
+  StrategyItem,
   StrategyItemSchema,
   StrategyListSchema,
-  type StrategyCreateBody,
-  type StrategyUpdateBody,
-  type StrategyDeleteBody,
-  type StrategyItem,
-  type ErrorResponse,
-  type StrategyConfigWithRelations,
-} from "@/types/strategy-config";
+  StrategyUpdateBody,
+  StrategyUpdateBodySchema,
+} from "@/app/(site)/strategy-config/types";
 
 export const runtime = "nodejs";
 
@@ -96,11 +96,30 @@ function buildCreateData(
     defaultSize: body.defaultSize ?? 0,
     maxSize: body.maxSize ?? 0,
     targetProfit: body.targetProfit ?? 0,
-    targetLoss: body.targetLoss ?? 0, // ✅ 추가
+    targetLoss: body.targetLoss ?? 0,
     leverage: body.leverage ?? 1,
     timeframe: body.timeframe,
-    enabled: true, // ← 항상 true로 고정
+    enabled: true, // 생성 시에는 항상 true
     rsiLength: body.rsiLength ?? 14,
+
+    // 🔽 리버스 진입 플래그
+    reverseEntryEnabled: body.reverseEntryEnabled ?? false,
+
+    // ✅ 시그널 확증/보조 파라미터 (StrategyConfig 공통 필드)
+    adxConfirmThreshold: body.adxConfirmThreshold ?? 25,
+    atrConfirmPeriod: body.atrConfirmPeriod ?? 14,
+    minAtrPct: body.minAtrPct ?? 1,
+
+    donchianLookback: body.donchianLookback ?? 20,
+    supertrendPeriod: body.supertrendPeriod ?? 10,
+    supertrendMult: body.supertrendMult ?? 3,
+
+    rangeFollowTrendOnly: body.rangeFollowTrendOnly ?? true,
+    rangeMinAtrMult: body.rangeMinAtrMult ?? 0,
+
+    trendSlopeWindow: body.trendSlopeWindow ?? 30,
+    trendSlopeThresholdAbs: body.trendSlopeThresholdAbs ?? 0.02,
+    donchianNearBreakPct: body.donchianNearBreakPct ?? 0.15,
 
     // 하위(1:1)
     ...(hasTrend(body.kind)
@@ -137,7 +156,7 @@ function buildUpdateData(
     ...(body.kind !== undefined ? { kind: body.kind } : {}),
     ...(body.rsiLength !== undefined ? { rsiLength: body.rsiLength } : {}),
 
-    // ✅ 공통(부분 수정) — enabled 업데이트는 제거
+    // ✅ 공통(부분 수정) — enabled 업데이트는 여기서 하지 않음
     ...(body.useMartin !== undefined ? { useMartin: body.useMartin } : {}),
     ...(body.martinMultiplier !== undefined
       ? { martinMultiplier: body.martinMultiplier }
@@ -149,11 +168,50 @@ function buildUpdateData(
     ...(body.targetProfit !== undefined
       ? { targetProfit: body.targetProfit }
       : {}),
-    ...(body.targetLoss !== undefined ? { targetLoss: body.targetLoss } : {}), // ✅ 추가
+    ...(body.targetLoss !== undefined ? { targetLoss: body.targetLoss } : {}),
     ...(body.leverage !== undefined ? { leverage: body.leverage } : {}),
     ...(body.timeframe !== undefined ? { timeframe: body.timeframe } : {}),
-    // enabled: true 를 강제 업데이트하지는 않음 (생성 시에 true), 필요시 주석 해제:
-    // enabled: true,
+
+    // 🔽 리버스 진입 플래그 (부분 수정)
+    ...(body.reverseEntryEnabled !== undefined
+      ? { reverseEntryEnabled: body.reverseEntryEnabled }
+      : {}),
+
+    // ✅ 시그널 확증/보조 파라미터 (부분 수정)
+    ...(body.adxConfirmThreshold !== undefined
+      ? { adxConfirmThreshold: body.adxConfirmThreshold }
+      : {}),
+    ...(body.atrConfirmPeriod !== undefined
+      ? { atrConfirmPeriod: body.atrConfirmPeriod }
+      : {}),
+    ...(body.minAtrPct !== undefined ? { minAtrPct: body.minAtrPct } : {}),
+
+    ...(body.donchianLookback !== undefined
+      ? { donchianLookback: body.donchianLookback }
+      : {}),
+    ...(body.supertrendPeriod !== undefined
+      ? { supertrendPeriod: body.supertrendPeriod }
+      : {}),
+    ...(body.supertrendMult !== undefined
+      ? { supertrendMult: body.supertrendMult }
+      : {}),
+
+    ...(body.rangeFollowTrendOnly !== undefined
+      ? { rangeFollowTrendOnly: body.rangeFollowTrendOnly }
+      : {}),
+    ...(body.rangeMinAtrMult !== undefined
+      ? { rangeMinAtrMult: body.rangeMinAtrMult }
+      : {}),
+
+    ...(body.trendSlopeWindow !== undefined
+      ? { trendSlopeWindow: body.trendSlopeWindow }
+      : {}),
+    ...(body.trendSlopeThresholdAbs !== undefined
+      ? { trendSlopeThresholdAbs: body.trendSlopeThresholdAbs }
+      : {}),
+    ...(body.donchianNearBreakPct !== undefined
+      ? { donchianNearBreakPct: body.donchianNearBreakPct }
+      : {}),
   };
 
   return data;
@@ -261,6 +319,7 @@ export async function PUT(req: NextRequest): Promise<NextResponse> {
 
       const effectiveKind = updated.kind;
 
+      // KIND 변경 시 서브모델 정리/생성
       if (willChangeKind) {
         if (!hasTrend(effectiveKind) && updated.trend) {
           await tx.trendStrategy.delete({
@@ -292,6 +351,7 @@ export async function PUT(req: NextRequest): Promise<NextResponse> {
           });
         }
       } else {
+        // KIND 동일 → 서브모델 값만 업데이트
         if (hasTrend(effectiveKind) && body.trend) {
           await tx.trendStrategy.update({
             where: { strategyConfigId: updated.id },
@@ -400,11 +460,30 @@ function mapRowToItem(r: StrategyConfigWithRelations): StrategyItem {
     defaultSize: r.defaultSize,
     maxSize: r.maxSize,
     targetProfit: r.targetProfit,
-    targetLoss: r.targetLoss, // ✅ 추가
+    targetLoss: r.targetLoss,
     leverage: r.leverage,
     timeframe: r.timeframe,
-    enabled: true, // 생성 시 true, 클라이언트 표시용 고정
+    enabled: true, // 생성 시 true, 표시용 고정 (원하면 r.enabled 로 바꿔도 됨)
     rsiLength: r.rsiLength,
+
+    // 🔽 리버스 진입 플래그
+    reverseEntryEnabled: r.reverseEntryEnabled,
+
+    // ✅ StrategyConfig 공통 시그널 파라미터
+    adxConfirmThreshold: r.adxConfirmThreshold,
+    atrConfirmPeriod: r.atrConfirmPeriod,
+    minAtrPct: r.minAtrPct,
+
+    donchianLookback: r.donchianLookback,
+    supertrendPeriod: r.supertrendPeriod,
+    supertrendMult: r.supertrendMult,
+
+    rangeFollowTrendOnly: r.rangeFollowTrendOnly,
+    rangeMinAtrMult: r.rangeMinAtrMult,
+
+    trendSlopeWindow: r.trendSlopeWindow,
+    trendSlopeThresholdAbs: r.trendSlopeThresholdAbs,
+    donchianNearBreakPct: r.donchianNearBreakPct,
 
     createdAt: r.createdAt.toISOString(),
     updatedAt: r.updatedAt.toISOString(),

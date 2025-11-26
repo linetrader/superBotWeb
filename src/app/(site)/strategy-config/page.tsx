@@ -3,17 +3,18 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { Section } from "@/components/ui";
-import type {
-  StrategyItem,
-  StrategyCreateBody,
-  StrategyUpdateBody,
-} from "@/types/strategy-config";
+// import type {
+//   StrategyItem,
+//   StrategyCreateBody,
+//   StrategyUpdateBody,
+// } from "@/types/strategy-config";
 import { useStrategyConfigs } from "./hooks/useStrategyConfigs";
 import { useCreateStrategyForm } from "./hooks/useCreateStrategyForm";
 import { useStrategyConfigsTable } from "./hooks/useStrategyConfigsTable";
 import CreateStrategyFormView from "./view/CreateStrategyFormView";
 import StrategyConfigsTableView from "./view/StrategyConfigsTableView";
 import EditStrategyPanel from "./view/EditStrategyPanel";
+import { StrategyCreateBody, StrategyItem, StrategyUpdateBody } from "./types";
 
 export default function StrategyConfigsPage() {
   const {

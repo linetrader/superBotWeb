@@ -31,17 +31,34 @@ export const StrategyItemSchema = z.object({
 
   // ✅ 공통(StrategyConfig)
   useMartin: z.boolean(),
-  // ✂️ removed: martinOnLossWebsea
   martinMultiplier: z.number(),
-  // ✂️ removed: entryForwardEnabled
   defaultSize: z.number().int(),
   maxSize: z.number().int(),
   targetProfit: z.number(),
-  targetLoss: z.number(), // ✅ 추가
+  targetLoss: z.number(),
   leverage: z.number().int(),
   timeframe: z.nativeEnum(Timeframe),
   enabled: z.boolean(),
   rsiLength: z.number().int(),
+
+  // 🔽 리버스 진입 플래그
+  reverseEntryEnabled: z.boolean(),
+
+  // ✅ 시그널 확증/보조 파라미터 (StrategyConfig 공통 필드)
+  adxConfirmThreshold: z.number(),
+  atrConfirmPeriod: z.number().int(),
+  minAtrPct: z.number(),
+
+  donchianLookback: z.number().int(),
+  supertrendPeriod: z.number().int(),
+  supertrendMult: z.number(),
+
+  rangeFollowTrendOnly: z.boolean(),
+  rangeMinAtrMult: z.number(),
+
+  trendSlopeWindow: z.number().int(),
+  trendSlopeThresholdAbs: z.number(),
+  donchianNearBreakPct: z.number(),
 
   // ✅ BOX 전용(Kind에 따라 null)
   lowerTh: z.number().nullable(),
@@ -68,17 +85,34 @@ export const StrategyCreateBodySchema = z
 
     // ✅ 공통(전부 optional → 전달된 값만 반영)
     useMartin: z.boolean().optional(),
-    // ✂️ removed: martinOnLossWebsea
     martinMultiplier: z.number().optional(),
-    // ✂️ removed: entryForwardEnabled
     defaultSize: z.number().int().optional(),
     maxSize: z.number().int().optional(),
     targetProfit: z.number().optional(),
-    targetLoss: z.number().optional(), // ✅ 추가
+    targetLoss: z.number().optional(),
     leverage: z.number().int().optional(),
     timeframe: z.nativeEnum(Timeframe).optional(),
     enabled: z.boolean().optional(),
     rsiLength: z.number().int().optional(),
+
+    // 🔽 리버스 진입 플래그
+    reverseEntryEnabled: z.boolean().optional(),
+
+    // ✅ 시그널 확증/보조 파라미터 (부분 지정 가능)
+    adxConfirmThreshold: z.number().optional(),
+    atrConfirmPeriod: z.number().int().optional(),
+    minAtrPct: z.number().optional(),
+
+    donchianLookback: z.number().int().optional(),
+    supertrendPeriod: z.number().int().optional(),
+    supertrendMult: z.number().optional(),
+
+    rangeFollowTrendOnly: z.boolean().optional(),
+    rangeMinAtrMult: z.number().optional(),
+
+    trendSlopeWindow: z.number().int().optional(),
+    trendSlopeThresholdAbs: z.number().optional(),
+    donchianNearBreakPct: z.number().optional(),
 
     // 전용
     trend: TrendParamsSchema.optional(),
@@ -124,17 +158,34 @@ export const StrategyUpdateBodySchema = z.object({
 
   // ✅ 공통(부분 수정)
   useMartin: z.boolean().optional(),
-  // ✂️ removed: martinOnLossWebsea
   martinMultiplier: z.number().optional(),
-  // ✂️ removed: entryForwardEnabled
   defaultSize: z.number().int().optional(),
   maxSize: z.number().int().optional(),
   targetProfit: z.number().optional(),
-  targetLoss: z.number().optional(), // ✅ 추가
+  targetLoss: z.number().optional(),
   leverage: z.number().int().optional(),
   timeframe: z.nativeEnum(Timeframe).optional(),
   enabled: z.boolean().optional(),
   rsiLength: z.number().int().optional(),
+
+  // 🔽 리버스 진입 플래그 (부분 수정)
+  reverseEntryEnabled: z.boolean().optional(),
+
+  // ✅ 시그널 확증/보조 파라미터 (부분 수정)
+  adxConfirmThreshold: z.number().optional(),
+  atrConfirmPeriod: z.number().int().optional(),
+  minAtrPct: z.number().optional(),
+
+  donchianLookback: z.number().int().optional(),
+  supertrendPeriod: z.number().int().optional(),
+  supertrendMult: z.number().optional(),
+
+  rangeFollowTrendOnly: z.boolean().optional(),
+  rangeMinAtrMult: z.number().optional(),
+
+  trendSlopeWindow: z.number().int().optional(),
+  trendSlopeThresholdAbs: z.number().optional(),
+  donchianNearBreakPct: z.number().optional(),
 
   // 전용(부분 수정)
   trend: TrendParamsSchema.optional(),

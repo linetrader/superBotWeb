@@ -4,8 +4,8 @@
 import { useMemo, useState } from "react";
 import { StrategyKind } from "@/generated/prisma";
 import { useToast } from "@/components/ui";
-import { StrategyItem, StrategyUpdateBody } from "@/types/strategy-config";
 import type { EditForm } from "../types/common";
+import { StrategyItem, StrategyUpdateBody } from "../types";
 
 function parseFloatOrNull(s: string): number | null {
   return s.trim() === "" ? null : Number.parseFloat(s);
@@ -35,10 +35,30 @@ export function useEditStrategyForm(params: Params) {
       defaultSize: String(item.defaultSize),
       maxSize: String(item.maxSize),
       targetProfit: String(item.targetProfit),
-      targetLoss: String(item.targetLoss), // ✅ 추가
+      targetLoss: String(item.targetLoss),
       leverage: String(item.leverage),
       timeframe: item.timeframe,
       rsiLength: String(item.rsiLength),
+
+      // 🔽 리버스 진입 플래그
+      reverseEntryEnabled: item.reverseEntryEnabled,
+
+      // ✅ StrategyConfig 공통 파라미터 → 문자열로 변환
+      adxConfirmThreshold: String(item.adxConfirmThreshold),
+      atrConfirmPeriod: String(item.atrConfirmPeriod),
+      minAtrPct: String(item.minAtrPct),
+
+      donchianLookback: String(item.donchianLookback),
+      supertrendPeriod: String(item.supertrendPeriod),
+      supertrendMult: String(item.supertrendMult),
+
+      rangeFollowTrendOnly: item.rangeFollowTrendOnly,
+      rangeMinAtrMult: String(item.rangeMinAtrMult),
+
+      trendSlopeWindow: String(item.trendSlopeWindow),
+      trendSlopeThresholdAbs: String(item.trendSlopeThresholdAbs),
+      donchianNearBreakPct: String(item.donchianNearBreakPct),
+
       lowerTh: item.lowerTh === null ? "" : String(item.lowerTh),
       upperTh: item.upperTh === null ? "" : String(item.upperTh),
       boxTouchPct: item.boxTouchPct === null ? "" : String(item.boxTouchPct),
@@ -73,10 +93,31 @@ export function useEditStrategyForm(params: Params) {
       body.defaultSize = Number.parseInt(form.defaultSize, 10);
       body.maxSize = Number.parseInt(form.maxSize, 10);
       body.targetProfit = Number.parseFloat(form.targetProfit);
-      body.targetLoss = Number.parseFloat(form.targetLoss); // ✅ 추가
+      body.targetLoss = Number.parseFloat(form.targetLoss);
       body.leverage = Number.parseInt(form.leverage, 10);
       body.timeframe = form.timeframe;
       body.rsiLength = Number.parseInt(form.rsiLength, 10);
+
+      // 🔽 리버스 진입 플래그
+      body.reverseEntryEnabled = form.reverseEntryEnabled;
+
+      // ✅ StrategyConfig 공통 파라미터 매핑
+      body.adxConfirmThreshold = Number.parseFloat(form.adxConfirmThreshold);
+      body.atrConfirmPeriod = Number.parseInt(form.atrConfirmPeriod, 10);
+      body.minAtrPct = Number.parseFloat(form.minAtrPct);
+
+      body.donchianLookback = Number.parseInt(form.donchianLookback, 10);
+      body.supertrendPeriod = Number.parseInt(form.supertrendPeriod, 10);
+      body.supertrendMult = Number.parseFloat(form.supertrendMult);
+
+      body.rangeFollowTrendOnly = form.rangeFollowTrendOnly;
+      body.rangeMinAtrMult = Number.parseFloat(form.rangeMinAtrMult);
+
+      body.trendSlopeWindow = Number.parseInt(form.trendSlopeWindow, 10);
+      body.trendSlopeThresholdAbs = Number.parseFloat(
+        form.trendSlopeThresholdAbs
+      );
+      body.donchianNearBreakPct = Number.parseFloat(form.donchianNearBreakPct);
 
       const trendNeeded =
         form.kind === StrategyKind.TREND || form.kind === StrategyKind.BOTH;

@@ -2,24 +2,37 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+// import {
+//   StrategyListSchema,
+//   StrategyItemSchema,
+//   StrategyCreateBodySchema,
+//   StrategyUpdateBodySchema,
+//   StrategyDeleteBodySchema,
+//   type StrategyItem,
+//   type StrategyList,
+//   type StrategyCreateBody,
+//   type StrategyUpdateBody,
+//   type StrategyDeleteBody,
+//   type ErrorResponse,
+// } from "@/types/strategy-config";
+import { StrategyKind as PrismaStrategyKind } from "@/generated/prisma";
 import {
-  StrategyListSchema,
-  StrategyItemSchema,
+  ErrorResponse,
+  StrategyCreateBody,
   StrategyCreateBodySchema,
-  StrategyUpdateBodySchema,
+  StrategyDeleteBody,
   StrategyDeleteBodySchema,
-  type StrategyItem,
-  type StrategyList,
-  type StrategyCreateBody,
-  type StrategyUpdateBody,
-  type StrategyDeleteBody,
-  type ErrorResponse,
-} from "@/types/strategy-config";
-import { StrategyKind as PrismaStrategyKind } from "@/generated/prisma"; // 👈 추가 (TREND/BOX/BOTH)
+  StrategyItem,
+  StrategyItemSchema,
+  StrategyList,
+  StrategyListSchema,
+  StrategyUpdateBody,
+  StrategyUpdateBodySchema,
+} from "../types";
 
 type LoadParams = {
   exchangeMarketId?: string | null;
-  kind?: PrismaStrategyKind; // 👈 "TREND" | "BOX" | "BOTH"
+  kind?: PrismaStrategyKind;
 };
 
 export function useStrategyConfigs(params?: LoadParams) {
@@ -29,9 +42,12 @@ export function useStrategyConfigs(params?: LoadParams) {
 
   const qs = useMemo(() => {
     const sp = new URLSearchParams();
-    if (params?.exchangeMarketId)
+    if (params?.exchangeMarketId) {
       sp.set("exchangeMarketId", params.exchangeMarketId);
-    if (params?.kind) sp.set("kind", params.kind); // 👈 BOTH 포함해 그대로 전달
+    }
+    if (params?.kind) {
+      sp.set("kind", params.kind);
+    }
     return sp.toString();
   }, [params?.exchangeMarketId, params?.kind]);
 
@@ -48,7 +64,9 @@ export function useStrategyConfigs(params?: LoadParams) {
         try {
           const ej = (await res.json()) as ErrorResponse;
           if (typeof ej?.error === "string") msg = ej.error;
-        } catch {}
+        } catch {
+          // noop
+        }
         setError(msg);
         return;
       }
@@ -77,7 +95,9 @@ export function useStrategyConfigs(params?: LoadParams) {
         try {
           const ej = (await res.json()) as ErrorResponse;
           if (typeof ej?.error === "string") msg = ej.error;
-        } catch {}
+        } catch {
+          // noop
+        }
         setError(msg);
         return null;
       }
@@ -101,7 +121,9 @@ export function useStrategyConfigs(params?: LoadParams) {
         try {
           const ej = (await res.json()) as ErrorResponse;
           if (typeof ej?.error === "string") msg = ej.error;
-        } catch {}
+        } catch {
+          // noop
+        }
         setError(msg);
         return null;
       }
@@ -125,7 +147,9 @@ export function useStrategyConfigs(params?: LoadParams) {
         try {
           const ej = (await res.json()) as ErrorResponse;
           if (typeof ej?.error === "string") msg = ej.error;
-        } catch {}
+        } catch {
+          // noop
+        }
         setError(msg);
         return false;
       }
