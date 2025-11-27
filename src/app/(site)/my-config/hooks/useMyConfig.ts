@@ -9,15 +9,12 @@ import {
   type SaveHistoryItem,
   type ErrorResponse,
   type PostBody,
-  type WallstLoginResult,
-  WallstLoginResultSchema,
   assertHistoryList,
 } from "../types/index";
 import {
   apiLoadHistory,
   apiSaveConfig,
   apiDeleteByExchangeCode,
-  apiWallstLogin,
 } from "../services/myConfigApi";
 import { pickValue } from "../utils/dom";
 
@@ -27,7 +24,6 @@ export type UseMyConfigReturn = {
   history: SaveHistoryItem[];
   saving: boolean;
   deleting: boolean;
-  wallstLoggingIn: boolean;
   errorMsg: string;
 
   exchangeLabel: string;
@@ -42,13 +38,6 @@ export type UseMyConfigReturn = {
   handleApiSecretChange: (
     v: string | React.ChangeEvent<HTMLInputElement>
   ) => void;
-  handleWallstUsernameChange: (
-    v: string | React.ChangeEvent<HTMLInputElement>
-  ) => void;
-  handleWallstPasswordChange: (
-    v: string | React.ChangeEvent<HTMLInputElement>
-  ) => void;
-  handleWallstLogin: () => Promise<void>;
   onToggleRow: (idx: number, checked: boolean) => void;
   onToggleAll: (checked: boolean) => void;
 };
@@ -58,11 +47,6 @@ function findExchangeCodeById(id: string): string {
   return x ? x.code : "";
 }
 
-function isWallstExchangeId(exchangeId: string): boolean {
-  const ex = EXCHANGES.find((e) => e.id === exchangeId);
-  return ex !== undefined && ex.code === "WALLST";
-}
-
 export function useMyConfig(): UseMyConfigReturn {
   const [form, setForm] = useState<MyConfigForm>({
     enabled: true,
@@ -70,14 +54,11 @@ export function useMyConfig(): UseMyConfigReturn {
     uid: "",
     apiKey: "",
     apiSecret: "",
-    wallstUsername: "",
-    wallstPassword: "",
   });
 
   const [history, setHistory] = useState<SaveHistoryItem[]>([]);
   const [saving, setSaving] = useState<boolean>(false);
   const [deleting, setDeleting] = useState<boolean>(false);
-  const [wallstLoggingIn, setWallstLoggingIn] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string>("");
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -136,6 +117,14 @@ export function useMyConfig(): UseMyConfigReturn {
       setErrorMsg("거래소 UID를 입력하세요.");
       return;
     }
+    if (!form.apiKey.trim()) {
+      setErrorMsg("API Key를 입력하세요.");
+      return;
+    }
+    if (!form.apiSecret.trim()) {
+      setErrorMsg("API Secret을 입력하세요.");
+      return;
+    }
 
     const payload: PostBody = {
       exchangeCode,
@@ -155,7 +144,6 @@ export function useMyConfig(): UseMyConfigReturn {
           uid: "",
           apiKey: "",
           apiSecret: "",
-          wallstPassword: "",
         }));
       } else {
         let errText = `Save failed (${res.status})`;
@@ -256,85 +244,12 @@ export function useMyConfig(): UseMyConfigReturn {
     setForm((s) => ({ ...s, apiSecret: value }));
   }
 
-  function handleWallstUsernameChange(
-    v: string | React.ChangeEvent<HTMLInputElement>
-  ): void {
-    const value = pickValue(v);
-    setForm((s) => ({ ...s, wallstUsername: value }));
-  }
-
-  function handleWallstPasswordChange(
-    v: string | React.ChangeEvent<HTMLInputElement>
-  ): void {
-    const value = pickValue(v);
-    setForm((s) => ({ ...s, wallstPassword: value }));
-  }
-
-  const handleWallstLogin = useCallback(async (): Promise<void> => {
-    setErrorMsg("");
-
-    if (!isWallstExchangeId(form.exchangeId)) {
-      setErrorMsg("wallST 거래소를 선택했을 때만 로그인할 수 있습니다.");
-      return;
-    }
-
-    const username = form.wallstUsername.trim();
-    const password = form.wallstPassword;
-    if (username === "" || password === "") {
-      setErrorMsg("wallST 아이디와 비밀번호를 모두 입력하세요.");
-      return;
-    }
-
-    setWallstLoggingIn(true);
-    try {
-      const res = await apiWallstLogin({ username, password });
-
-      if (!res.ok) {
-        let errText = `wallST 로그인 실패 (${res.status})`;
-        try {
-          const ej = (await res.json()) as ErrorResponse;
-          if (typeof ej.error === "string") {
-            errText = ej.error;
-          }
-          if (ej.details !== undefined) {
-            errText += ` ${JSON.stringify(ej.details)}`;
-          }
-        } catch {
-          // noop
-        }
-        setErrorMsg(errText);
-        return;
-      }
-
-      const dataUnknown = (await res.json()) as unknown;
-      const result: WallstLoginResult =
-        WallstLoginResultSchema.parse(dataUnknown);
-
-      setForm((prev) => ({
-        ...prev,
-        uid: prev.uid !== "" ? prev.uid : username,
-        apiKey: result.accessToken,
-        apiSecret: prev.apiSecret !== "" ? prev.apiSecret : "wallst-no-secret",
-        wallstPassword: "",
-      }));
-    } catch (e) {
-      let errText = "wallST 로그인 실패";
-      if (e instanceof Error) {
-        errText = e.message;
-      }
-      setErrorMsg(errText);
-    } finally {
-      setWallstLoggingIn(false);
-    }
-  }, [form.exchangeId, form.wallstUsername, form.wallstPassword]);
-
   return {
     form,
     setForm,
     history,
     saving,
     deleting,
-    wallstLoggingIn,
     errorMsg,
 
     exchangeLabel,
@@ -347,9 +262,6 @@ export function useMyConfig(): UseMyConfigReturn {
     handleUidChange,
     handleApiKeyChange,
     handleApiSecretChange,
-    handleWallstUsernameChange,
-    handleWallstPasswordChange,
-    handleWallstLogin,
     onToggleRow,
     onToggleAll,
   };

@@ -51,10 +51,6 @@ export type MyConfigForm = {
   uid: string;
   apiKey: string;
   apiSecret: string;
-
-  /** wallST 로그인용 필드 */
-  wallstUsername: string;
-  wallstPassword: string;
 };
 
 export type SaveHistoryItem = HistoryItem;
@@ -64,27 +60,15 @@ export type ErrorResponse = {
   details?: unknown;
 };
 
-/** wallST 로그인 요청 (username + password) */
-export const WallstLoginRequestSchema = z.object({
-  username: z.string().min(1),
-  password: z.string().min(1),
-});
-export type WallstLoginRequest = z.infer<typeof WallstLoginRequestSchema>;
-
-/** wallST 로그인 결과 (토큰만 사용) */
-export const WallstLoginResultSchema = z.object({
-  tokenType: z.string(),
-  accessToken: z.string(),
-});
-export type WallstLoginResult = z.infer<typeof WallstLoginResultSchema>;
-
 /** 런타임 타입 가드 */
 export function assertPostBody(data: unknown): asserts data is PostBody {
   PostBodySchema.parse(data);
 }
+
 export function assertSaveResult(data: unknown): asserts data is SaveResult {
   SaveResultSchema.parse(data);
 }
+
 export function assertHistoryList(data: unknown): asserts data is HistoryList {
   HistoryListSchema.parse(data);
 }

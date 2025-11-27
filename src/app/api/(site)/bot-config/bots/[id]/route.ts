@@ -9,6 +9,7 @@ import { getUserId } from "@/lib/request-user";
 const IdParamSchema = z.object({ id: z.string().min(1) });
 
 type UiStatus = "RUNNING" | "STOPPED" | "UNKNOWN";
+
 function toUiStatus(s: DbBotStatus | null): UiStatus {
   if (!s) return "STOPPED";
   if (s === "RUNNING") return "RUNNING";
@@ -90,7 +91,7 @@ export async function GET(
   }
 }
 
-/** DELETE /api/bot-config/bots/[id] : 기존 삭제 유지 */
+/** DELETE /api/bot-config/bots/[id] : Bot 및 관련 레코드 삭제 */
 export async function DELETE(
   _req: NextRequest,
   context: { params: Promise<{ id: string }> }
@@ -107,7 +108,36 @@ export async function DELETE(
       );
     }
 
-    await prisma.tradingBot.delete({ where: { id } });
+    // 소유권 검증
+    const bot = await prisma.tradingBot.findFirst({
+      where: { id, userId },
+      select: { id: true },
+    });
+    if (!bot) {
+      return NextResponse.json<ApiResponse<null>>(
+        { ok: false, error: "Bot not found", code: "NOT_FOUND" },
+        { status: 404 }
+      );
+    }
+
+    // FK 제약을 피하기 위해 자식 레코드부터 삭제
+    await prisma.$transaction(async (tx) => {
+      // BotBackupItem (에러에 나온 FK)
+      await tx.botBackupItem.deleteMany({
+        where: { botId: id },
+      });
+
+      // 필요 시 다른 종속 테이블도 여기서 정리 (예: BotRuntime 등)
+      await tx.botRuntime.deleteMany({
+        where: { botId: id },
+      });
+
+      // 마지막에 TradingBot 삭제
+      await tx.tradingBot.delete({
+        where: { id },
+      });
+    });
+
     return NextResponse.json<ApiResponse<null>>(
       { ok: true, data: null },
       { status: 200 }
