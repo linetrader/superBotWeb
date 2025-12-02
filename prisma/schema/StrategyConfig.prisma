@@ -37,8 +37,8 @@ model StrategyConfig {
   rangeMinAtrMult         Float   @default(0)
 
   trendSlopeWindow        Int     @default(30)
-  trendSlopeThresholdAbs  Float   @default(0.02)
-  donchianNearBreakPct    Float   @default(0.15)
+  trendSlopeThresholdAbs  Float   @default(0.0007)
+  donchianNearBreakPct    Float   @default(1.5)
 
   // --- 전략별 서브모델 ---
   trend TrendStrategy?

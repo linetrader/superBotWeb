@@ -55,8 +55,8 @@ export function useCreateStrategyForm(params: Params) {
     rangeMinAtrMult: "0",
 
     trendSlopeWindow: "30",
-    trendSlopeThresholdAbs: "0.02",
-    donchianNearBreakPct: "0.15",
+    trendSlopeThresholdAbs: "0.0007",
+    donchianNearBreakPct: "1.5",
 
     // BOX
     lowerTh: "30",

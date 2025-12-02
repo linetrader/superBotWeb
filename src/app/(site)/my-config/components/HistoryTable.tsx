@@ -6,10 +6,21 @@ import type { UseMyConfigReturn } from "../hooks/useMyConfig";
 
 type Props = { vm: UseMyConfigReturn };
 
+// UID 요약 표시용 헬퍼
+function formatUid(uid?: string): string {
+  if (!uid) return "-";
+
+  const maxLen = 20; // 표시할 최대 길이
+  if (uid.length <= maxLen) return uid;
+
+  const head = uid.slice(0, 10);
+  const tail = uid.slice(-4);
+  return `${head}...${tail}`;
+}
+
 export function HistoryTable({ vm }: Props) {
   const { history, selectedRowIndexes, onToggleRow, onToggleAll } = vm;
 
-  // UID 컬럼 추가
   const head: [string, string, string, string] = [
     "수정시각",
     "거래소",
@@ -20,7 +31,7 @@ export function HistoryTable({ vm }: Props) {
   const rows: [string, string, string, string][] = history.map((h) => [
     new Date(h.updatedAt).toLocaleString(),
     `${h.exchangeName} (${h.exchangeCode})`,
-    h.uid ?? "-",
+    formatUid(h.uid),
     new Date(h.createdAt).toLocaleString(),
   ]);
 

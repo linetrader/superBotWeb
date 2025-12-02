@@ -30,7 +30,8 @@ export type TimeframeEnum =
 export const EXCHANGES: ReadonlyArray<ExchangeOption> = [
   { id: "ex_gateio", code: "GATEIO", name: "Gate.io" },
   { id: "ex_websea", code: "WEBSEA", name: "WebSea" },
-  { id: "ex_wallst", code: "WALLST", name: "wallST" }, // ✅ wallST 추가
+  { id: "ex_wallst", code: "WALLST", name: "wallST" },
+  { id: "ex_ordery", code: "ORDERY", name: "Orderly" },
 ];
 
 export const MARKETS: ReadonlyArray<MarketOption> = [
@@ -78,6 +79,14 @@ export const MARKETS: ReadonlyArray<MarketOption> = [
     // ⚠️ 실제 wallST Futures REST Base URL 로 교체 필요
     restBaseUrl: "https://example.wallst.com/api/futures",
   },
+  // ✅ Orderly Perps (FUTURES) 추가
+  {
+    id: "mkt_ordery_futures",
+    exchangeId: "ex_ordery",
+    code: "FUTURES",
+    name: "Orderly Perps",
+    restBaseUrl: "https://api.orderly.org",
+  },
 ];
 
 export const SYMBOLS_BY_MARKET: Readonly<
@@ -107,6 +116,11 @@ export const SYMBOLS_BY_MARKET: Readonly<
   mkt_wallst_futures: [
     { value: "BTCUSDT", label: "BTC/USDT" },
     { value: "ETHUSDT", label: "ETH/USDT" },
+  ],
+  // ✅ Orderly Perps 심볼 (예시)
+  mkt_ordery_futures: [
+    { value: "PERP_BTC_USDC", label: "BTC-PERP (USDC)" },
+    { value: "PERP_ETH_USDC", label: "ETH-PERP (USDC)" },
   ],
 };
 
